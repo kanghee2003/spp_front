@@ -1,0 +1,73 @@
+:root {
+  font-family:
+    system-ui,
+    -apple-system,
+    Segoe UI,
+    Roboto,
+    Helvetica,
+    Arial,
+    'Apple Color Emoji',
+    'Segoe UI Emoji';
+  line-height: 1.5;
+  font-weight: 400;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}
+a {
+  color: inherit;
+}
+
+/* MDI tabs bar */
+.mdi-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  background: white;
+  user-select: none;
+}
+.mdi-tab.active {
+  border-color: rgba(0, 0, 0, 0.32);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+.mdi-tab .title {
+  white-space: nowrap;
+}
+.mdi-tab .close {
+  cursor: pointer;
+  opacity: 0.65;
+}
+.mdi-tab .close:hover {
+  opacity: 1;
+}
+
+.loading_wrap {
+  display: inline-flex;
+  position: fixed;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+  z-index: 3001;
+}
+
+.loading_wrap .loading_dim {
+  width: 64px;
+  height: 64px;
+  position: absolute;
+  opacity: 60%;
+  border-radius: 8px;
+  background-color: #000;
+}
+
+.selected-row {
+  background-color: lightgray;
+}

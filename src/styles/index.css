@@ -1,0 +1,6 @@
+/* Entry stylesheet (imported from src/main.tsx) */
+@import './global.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
