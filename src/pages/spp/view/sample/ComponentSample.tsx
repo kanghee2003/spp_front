@@ -7,6 +7,7 @@ import SppInputText from '../../component/Input/SppInputText';
 import SppSelect from '../../component/Select/SppSelect';
 import SppSelectForm from '../../component/Select/SppSelectForm';
 import SamplePopup from './popup/SamplePopup';
+import ExcelUploadPopup from './popup/ExcelUploadPopup';
 import SppInputTextForm from '../../component/Input/SppInputTextForm';
 import SppInputNumberForm from '../../component/Input/SppInputNumberForm';
 import { useMessage } from '@/hook/useMessage';
@@ -15,6 +16,8 @@ import SppAutoComplete from '../../component/AutoComplete/SppAutoComplete';
 import { useMdiStore } from '@/store/mdi.store';
 import { ComponentSampleOptions } from '../../type/ComponentSample.type';
 import SppAutoCompleteForm from '../../component/AutoComplete/SppAutocompleteForm';
+import { AutoCompleteMode } from '../../type/cm/AutoComplete.type';
+import { ExcelUploadList } from '../../type/excel/ExcelUpload.type';
 
 type ComponentSampleFomeType = {
   select: string;
@@ -29,6 +32,14 @@ const ComponentSample = () => {
   const { alertMessage } = useMessage();
   const [optionList, setOptionList] = useState<ComponentSampleOptions[]>([]);
   const [isOpen, setIsOpen] = useState(false);
+  const [isExcelOpen, setIsExcelOpen] = useState(false);
+  const [excelRows, setExcelRows] = useState<ExcelUploadList>([]);
+
+  const handleExcelUploaded = (list: ExcelUploadList) => {
+    setExcelRows(list);
+    alertMessage(`엑셀 업로드 ${list.length}건 확인\n` + JSON.stringify(list.slice(0, 5), null, 2));
+    setIsExcelOpen(false);
+  };
   const {
     control: sampleControl,
     setValue,
@@ -168,19 +179,34 @@ const ComponentSample = () => {
             </SppButton>
           </Col>
           <Col span={6}>
+            <SppButton type="default" htmlType="button" onClick={() => setIsExcelOpen(true)}>
+              ExcelUpload
+            </SppButton>
+          </Col>
+          <Col span={6}>
             <SppButton type="default" htmlType="button" onClick={() => openTab({ key: 'DASHBOARD', title: 'x' })}>
               대시보드로 이동
             </SppButton>
           </Col>
         </Row>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={3}></Col>
+          <Col span={3}>
+            <SppAutoComplete mode={AutoCompleteMode.EMP} />
+          </Col>
           <Col span={6}></Col>
           <Col span={3}></Col>
           <Col span={6}></Col>
         </Row>
       </Card>
       <SamplePopup open={isOpen} title={'Test Title'} style={{ minWidth: '800px' }} onOk={() => setIsOpen(false)} onCancel={() => setIsOpen(false)} />
+      <ExcelUploadPopup
+        open={isExcelOpen}
+        title={'Excel Upload'}
+        style={{ minWidth: '600px' }}
+        onUploaded={handleExcelUploaded}
+        onOk={() => setIsExcelOpen(false)}
+        onCancel={() => setIsExcelOpen(false)}
+      />
     </Card>
   );
 };

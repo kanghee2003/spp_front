@@ -11,7 +11,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, Col, Row, Space, Typography } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 import { TableRowSelection } from 'antd/es/table/interface';
-import { useEffect, useRef, useState } from 'react';
+import { Key, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import SppDatePickerForm from '../../component/DatePicker/SppDatePickerForm';
 import { IudType } from '../../../../type/common.type';
@@ -19,7 +19,8 @@ import { IudType } from '../../../../type/common.type';
 const Sample1 = () => {
   const alertFormErrors = useAlertFormErrors();
   const [search, setSeach] = useState<Sample1ListSearchReq | null>(null);
-  const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [pageParam, setPageParam] = useState<{ page: number; pageSize: number }>({ page: 1, pageSize: 10 });
+  const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const tableRef = useRef<any>(null);
 
   const {
@@ -59,8 +60,8 @@ const Sample1 = () => {
     name: 'list',
   });
 
-  const { data: groupData, refetch: refetchGroupData } = Sample1Service.useGroupList(search?.searchText ?? '');
-  const saveQuery = Sample1Service.useSave();
+  const { data: groupPage, refetch: refetchGroupData } = Sample1Service().getGroupListPage(search?.searchText ?? '', pageParam.page, pageParam.pageSize);
+  const saveQuery = Sample1Service().save();
 
   /* ============================================== TEMPLATE ============================================== */
   const defaultSaveValue = {
@@ -156,6 +157,7 @@ const Sample1 = () => {
   const handleSearch = (value: Sample1ListSearchReq) => {
     setSelectedRowKeys([]);
     tableRef.current?.resetPagination?.();
+    setPageParam((prev) => ({ ...prev, page: 1 }));
     setSeach({ ...search, searchText: value.searchText });
   };
 
@@ -185,19 +187,20 @@ const Sample1 = () => {
 
   /* ============================================== EFFECT ============================================== */
   useEffect(() => {
-    search && refetchGroupData();
-  }, [search]);
+    if (!search) return;
+    refetchGroupData();
+  }, [search, pageParam.page, pageParam.pageSize]);
 
   useEffect(() => {
-    if (!groupData) {
+    if (!groupPage) {
       saveFormReset({ list: [] });
       return;
     }
 
     saveFormReset({
-      list: groupData,
+      list: groupPage.items,
     });
-  }, [groupData, saveFormReset]);
+  }, [groupPage, saveFormReset]);
 
   useEffect(() => {
     const errors = searchFormState.errors;
@@ -244,11 +247,11 @@ const Sample1 = () => {
 
           <Col xs={24} sm={8} md={12} lg={14} xl={16}>
             <Space wrap>
-              <SppButton type="primary" htmlType="button" icon={<SearchOutlined />} onClick={searchFormHandleSubmit(handleSearch)}>
+              <SppButton type="primary" htmlType="button" icon={<SearchOutlined />} onClick={(e) => searchFormHandleSubmit(handleSearch)(e)}>
                 조회
               </SppButton>
 
-              <SppButton type="default" htmlType="button" icon={<SaveOutlined />} onClick={saveFormHandleSubmit(handleSave)}>
+              <SppButton type="default" htmlType="button" icon={<SaveOutlined />} onClick={(e) => saveFormHandleSubmit(handleSave)(e)}>
                 저장
               </SppButton>
             </Space>
@@ -277,10 +280,20 @@ const Sample1 = () => {
           ref={tableRef}
           rowKey="uuid"
           rowNoFlag
+          serverPaging
           columns={columns}
           dataSource={saveFormFields}
+          pagination={{ total: groupPage?.totalCount ?? 0 }}
           rowSelection={rowSelection}
           rowSelectedFlag
+          onChange={(pagination) => {
+            // 페이지 변경 시 서버에서 해당 페이지 데이터를 다시 조회
+            setSelectedRowKeys([]);
+            setPageParam({
+              page: pagination.current ? pagination.current : 1,
+              pageSize: pagination.pageSize ? pagination.pageSize : 10,
+            });
+          }}
           onRow={(record, rowIndex) => ({
             onClick: () => {
               console.log('clicked record:', record);

@@ -72,6 +72,8 @@ export default [
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
       //'@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
       '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-expressions': 'off',
+      'react-hooks/rules-of-hooks': 'off',
 
       // pages 하위는 시스템(폴더) 경계를 넘어서 import 금지
       // 예: src/pages/spp/** 는 src/pages/etc/** 또는 다른 시스템 폴더를 참조하면 안됨

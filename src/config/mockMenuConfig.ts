@@ -39,8 +39,8 @@ export const menuTreeSpp: MenuNode[] = [
         label: 'Sample2-2',
         children: [
           { key: 'SAMPLE2-2-1', path: '', label: 'Sample2-2-1', isLeaf: true },
-          { key: 'SAMPLE2-2-1', path: '', label: 'Sample2-2-2', isLeaf: true },
-          { key: 'SAMPLE2-2-1', path: '', label: 'Sample2-2-2', isLeaf: true },
+          { key: 'SAMPLE2-2-2', path: '', label: 'Sample2-2-2', isLeaf: true },
+          { key: 'SAMPLE2-2-3', path: '', label: 'Sample2-2-2', isLeaf: true },
         ],
       },
       { key: 'SAMPLE2-3', path: '', label: 'Sample2-3', isLeaf: true },

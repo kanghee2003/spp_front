@@ -1,0 +1,29 @@
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/man/**/target
+!**/src/test/**/target
+build/
+bin/
+.project
+
+**/node_modules/
+.gradle/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.imi
+*.ipr
+*.lck
+*.log
+*.local.*
+
+
+
+### OS ###
+*.DS_Store
+
+
+### REACT_APP ###
+/node_module
+/target
+

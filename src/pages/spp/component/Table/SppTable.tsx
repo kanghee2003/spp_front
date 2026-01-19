@@ -14,6 +14,12 @@ interface CustomTableProps<T extends object = any> extends TableProps<T> {
   selectedRowIndex?: number;
   rowSelectedFlag?: boolean;
   paginationResetKey?: any;
+  /**
+   * 서버 페이징 모드
+   * - dataSource는 '현재 페이지 데이터'만 전달
+   * - 내부에서 slice하지 않고 그대로 렌더
+   */
+  serverPaging?: boolean;
 }
 
 interface CustomPageParam {
@@ -136,7 +142,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     const pageSize = paginationParam.pageSize;
     const start = pagingEnabled ? (page - 1) * pageSize : 0;
 
-    if (pagingEnabled) {
+    if (pagingEnabled && props.serverPaging !== true) {
       const maxPage = Math.max(1, Math.ceil(source.length / pageSize));
       if (page > maxPage) {
         setPaginationParam({
@@ -148,11 +154,12 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       }
     }
 
-    const viewRows = pagingEnabled ? source.slice(start, start + pageSize) : source;
+    const viewRows = pagingEnabled ? (props.serverPaging === true ? source : source.slice(start, start + pageSize)) : source;
 
     if (props.rowNoFlag === true && viewRows.length > 0) {
       const array = [
         ...viewRows.map((item: any, idx: number) => {
+          // serverPaging이면 source가 이미 page 단위지만 rowNo는 전체 기준으로 계산해야 함
           item['rowNo'] = start + (idx + 1);
           return item;
         }),
@@ -175,6 +182,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     }
   }, [
     props.dataSource,
+    props.serverPaging,
     paginationParam.pageEditFlag,
     paginationParam.page,
     paginationParam.pageSize,

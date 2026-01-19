@@ -39,6 +39,15 @@ export const Sample1Scheme = z.object({
 
 export const Sample1ListScheme = z.array(Sample1Scheme);
 
+export const Sample1ListPageScheme = z
+  .object({
+    items: z.array(Sample1Scheme),
+    page: z.number().int(),
+    pageSize: z.number().int(),
+    totalCount: z.number().int(),
+  })
+  .strict();
+
 export const Sample1SaveScheme = z.object({
   list: z.array(Sample1Scheme),
 });
@@ -48,4 +57,5 @@ export type Sample1ListSearchReq = z.infer<typeof Sample1ListSearchScheme>;
 
 export type Sample1Res = z.infer<typeof Sample1Scheme>;
 export type Sample1ListRes = z.infer<typeof Sample1ListScheme>;
+export type Sample1ListPageRes = z.infer<typeof Sample1ListPageScheme>;
 export type Sample1SaveReq = z.infer<typeof Sample1SaveScheme>;
