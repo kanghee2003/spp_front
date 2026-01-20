@@ -20,41 +20,6 @@ export const menuTreeSpp: MenuNode[] = [
       { key: 'Compnent', path: 'sample/ComponentSample', label: 'Component', isLeaf: true },
     ],
   },
-  {
-    key: 'SAMPLE2',
-    label: 'Samples2',
-    children: [
-      {
-        key: 'SAMPLE2-1',
-        path: '',
-        label: 'Sample2-1',
-        children: [
-          { key: 'SAMPLE2-1-1', path: '', label: 'Sample2-1-1', isLeaf: true },
-          { key: 'SAMPLE2-1-2', path: '', label: 'Sample2-1-2', isLeaf: true },
-        ],
-      },
-      {
-        key: 'SAMPLE2-2',
-        path: 'sample/Sample2-2',
-        label: 'Sample2-2',
-        children: [
-          { key: 'SAMPLE2-2-1', path: '', label: 'Sample2-2-1', isLeaf: true },
-          { key: 'SAMPLE2-2-2', path: '', label: 'Sample2-2-2', isLeaf: true },
-          { key: 'SAMPLE2-2-3', path: '', label: 'Sample2-2-2', isLeaf: true },
-        ],
-      },
-      { key: 'SAMPLE2-3', path: '', label: 'Sample2-3', isLeaf: true },
-    ],
-  },
-  {
-    key: 'SAMPLE3',
-    label: 'Samples3',
-    children: [
-      { key: 'SAMPLE3-1', path: '', label: 'Sample3-1', isLeaf: true },
-      { key: 'SAMPLE3-2', path: '', label: 'Sample3-2', isLeaf: true },
-      { key: 'SAMPLE3-3', path: '', label: 'Sample3-3', isLeaf: true },
-    ],
-  },
 ];
 
 export const menuTreeEtc: MenuNode[] = [

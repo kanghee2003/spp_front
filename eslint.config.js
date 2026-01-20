@@ -74,6 +74,7 @@ export default [
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/no-unused-expressions': 'off',
       'react-hooks/rules-of-hooks': 'off',
+      'react-hooks/exhaustive-deps': 'off',
 
       // pages 하위는 시스템(폴더) 경계를 넘어서 import 금지
       // 예: src/pages/spp/** 는 src/pages/etc/** 또는 다른 시스템 폴더를 참조하면 안됨
@@ -96,14 +97,6 @@ export default [
       'prettier/prettier': 'warn',
     },
   },
-  {
-    files: ['src/provider/GlobalAxiosProvider.tsx'],
-    rules: {
-      '@typescript-eslint/no-unused-expressions': 'off',
-      'react-hooks/set-state-in-effect': 'off',
-    },
-  },
-
   // import/no-restricted-paths 는 resolver 상황에 따라(alias 등) 놓칠 수 있어
   // "@/pages/<otherSystem>/**" 와 같은 alias import 도 확실히 막는다.
   ...pageSystems.map((systemKey) => {

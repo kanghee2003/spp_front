@@ -92,9 +92,7 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
       }}
     >
       <Space direction="vertical" style={{ width: '100%' }}>
-        <Typography.Text>
-          {sampleLink}
-        </Typography.Text>
+        <Typography.Text>{sampleLink}</Typography.Text>
 
         <Upload
           accept=".xlsx,.xls"
@@ -114,9 +112,7 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
           <SppButton type="default">엑셀 파일 선택</SppButton>
         </Upload>
 
-        <Typography.Text type="secondary">
-          필수 컬럼: {requiredHeaders.join(', ')} (헤더 순서 무관)
-        </Typography.Text>
+        <Typography.Text type="secondary">필수 컬럼: {requiredHeaders.join(', ')} (헤더 순서 무관)</Typography.Text>
 
         {error ? <Alert type="error" showIcon message={error} /> : null}
 
