@@ -42,7 +42,6 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
     const pages = query.data?.pages ?? [];
     const items: any[] = pages.flatMap((p) => p.items ?? []);
 
-    // mode 별 value/label 포맷
     if (mode === AutoCompleteMode.ORG) {
       return items.map((x) => ({
         ...x,
@@ -56,7 +55,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
         ...x,
         value: `${x.userId} | ${x.gradeNm}`,
         label: `${x.userId} | ${x.gradeNm} | ${x.orgNm}`,
-        keyValue: x.userId, // RHF 저장값
+        keyValue: x.userId,
       }));
     }
     return items;
@@ -102,7 +101,6 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
 
         if (keyValue !== undefined) props.onChange?.(keyValue);
 
-        // 필요하면 외부 onSelect도 여기서만 호출 (antd onSelect는 안 뜸)
         props.onSelect?.(displayValue, picked);
       }}
       onChange={(v) => {

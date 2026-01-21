@@ -1,15 +1,16 @@
 import SppButton from '@/pages/spp/component/Button/SppButton';
 import SppModal, { SppModalProps } from '@/pages/spp/component/Modal/SppModal';
-import { ExcelUploadList } from '@/pages/spp/type/excel/ExcelUpload.type';
+
 import { Alert, Input, Space, Typography, message } from 'antd';
 import type { UploadFile } from 'antd/es/upload/interface';
-import React, { useMemo, useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { z } from 'zod';
 
 export interface ExcelUploadPopupProps extends SppModalProps {
   rowScheme: z.ZodObject<any>;
-  onUploaded?: (list: ExcelUploadList) => void;
+  onUploaded?: (list: any) => void;
+
   startRow?: number;
   startCol?: number;
 }
@@ -41,8 +42,14 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
       if (!sheetName) throw new Error('엑셀 시트가 없습니다.');
 
       const sheet = workbook.Sheets[sheetName];
-      const rows: any[][] = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '', blankrows: false }) as any;
-      if (!rows || rows.length < 2) throw new Error('데이터가 없습니다.');
+
+      const rows: any[][] = XLSX.utils.sheet_to_json(sheet, {
+        header: 1,
+        defval: '',
+        blankrows: true,
+      }) as any;
+
+      if (!rows || rows.length < 1) throw new Error('데이터가 없습니다.');
 
       setRawRows(rows);
     } catch (e: any) {
@@ -55,10 +62,8 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
   const validateAndBuildList = () => {
     setError(null);
 
-    const startRow = Math.max(1, props.startRow ?? 1);
-    const startCol = Math.max(1, props.startCol ?? 1);
-    const headerRowIdx = startRow - 1;
-    const dataStartRowIdx = headerRowIdx + 1;
+    const startRow = Math.max(0, props.startRow ?? 1);
+    const startCol = Math.max(0, props.startCol ?? 0);
 
     const rowScheme = props.rowScheme;
     const shape: Record<string, z.ZodTypeAny> = (rowScheme as any)?._def?.shape?.() ?? (rowScheme as any).shape;
@@ -70,7 +75,7 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
       return null;
     }
 
-    if (!rawRows || rawRows.length <= dataStartRowIdx) {
+    if (!rawRows || rawRows.length <= startRow) {
       const msg = '엑셀 데이터가 없습니다.';
       setError(msg);
       message.error(msg);
@@ -122,10 +127,11 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
 
     const list: any[] = [];
 
-    // zod 선언 순서대로, 한 번에 하나씩만 오류 메시지 출력
-    for (let rIdx = dataStartRowIdx; rIdx < rawRows.length; rIdx++) {
+    for (let rIdx = startRow; rIdx < rawRows.length; rIdx++) {
       const row = rawRows[rIdx] ?? [];
-      const isEmpty = !Array.isArray(row) || row.every((v) => String(v ?? '').trim().length === 0);
+
+      const dataCells = Array.isArray(row) ? row.slice(startCol, startCol + keys.length) : [];
+      const isEmpty = dataCells.length === 0 || dataCells.every((v) => String(v ?? '').trim().length === 0);
       if (isEmpty) continue;
 
       const obj: any = {};
@@ -133,13 +139,15 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
       for (let cIdx = 0; cIdx < keys.length; cIdx++) {
         const key = keys[cIdx];
         const fieldSchema = shape[key] as z.ZodTypeAny;
-        const raw = row[startCol - 1 + cIdx];
+
+        const raw = row[startCol + cIdx];
         const value = normalizeValue(fieldSchema, raw);
 
         const parsed = fieldSchema.safeParse(value);
         if (!parsed.success) {
           const issue = parsed.error.issues?.[0];
-          const msg = `${rIdx + 1}행 ${startCol - 1 + cIdx + 1}열(${key}): ${issue?.message ?? '검증 실패'}`;
+
+          const msg = `${rIdx + 1}행 ${startCol + cIdx + 1}열(${key}): ${issue?.message ?? '검증 실패'}`;
           setError(msg);
           message.error(msg);
           return null;
@@ -151,7 +159,7 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
       list.push(obj);
     }
 
-    return list as ExcelUploadList;
+    return list as any;
   };
 
   return (
@@ -162,13 +170,24 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
         if (!canOk) return;
         const list = validateAndBuildList();
         if (!list) return;
+
         props.onUploaded?.(list);
         props.onOk?.(e);
-      }}
-      onCancel={(e) => {
+
         setFileList([]);
         setRawRows([]);
+        setError(null);
+
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      }}
+      onCancel={(e) => {
         props.onCancel?.(e);
+
+        setFileList([]);
+        setRawRows([]);
+        setError(null);
+
+        if (fileInputRef.current) fileInputRef.current.value = '';
       }}
     >
       <Space vertical={true} style={{ width: '100%' }}>
@@ -210,11 +229,7 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
           </SppButton>
         </Space.Compact>
 
-        {/* {error ? <Alert type="error" showIcon message={error} /> : null} */}
-
-        {!error && rawRows.length > 0 ? (
-          <Alert type="info" showIcon title={`파일 로드 완료: ${Math.max(0, rawRows.length - Math.max(1, props.startRow ?? 1))}건`} />
-        ) : null}
+        {error ? <Alert type="error" showIcon message={error} /> : null}
       </Space>
     </SppModal>
   );

@@ -8,17 +8,16 @@ import SppSelect from '../../component/Select/SppSelect';
 import SppSelectForm from '../../component/Select/SppSelectForm';
 import SamplePopup from './popup/SamplePopup';
 import ExcelUploadPopup from '../../component/Excel/ExcelUploadPopup';
-import { ExcelUploadRowScheme } from '../../type/excel/ExcelUpload.type';
+
 import SppInputTextForm from '../../component/Input/SppInputTextForm';
 import SppInputNumberForm from '../../component/Input/SppInputNumberForm';
 import { useMessage } from '@/hook/useMessage';
 import SppDatePickerForm from '../../component/DatePicker/SppDatePickerForm';
 import SppAutoComplete from '../../component/AutoComplete/SppAutoComplete';
 import { useMdiStore } from '@/store/mdi.store';
-import { ComponentSampleOptions } from '../../type/ComponentSample.type';
+import { ComponentSampleOptions, ExcelUploadList, ExcelUploadRowScheme } from '../../type/ComponentSample.type';
 import SppAutoCompleteForm from '../../component/AutoComplete/SppAutocompleteForm';
 import { AutoCompleteMode } from '../../type/cm/AutoComplete.type';
-import { ExcelUploadList } from '../../type/excel/ExcelUpload.type';
 
 type ComponentSampleFomeType = {
   select: string;

@@ -6,7 +6,13 @@ export interface SppModalProps extends ModalProps {}
 const SppModal = (props: SppModalProps) => {
   return (
     <>
-      <Modal {...props} okText={props.okText ? props.okText : '확인'} cancelText={props.cancelText ? props.cancelText : '취소'}>
+      <Modal
+        {...props}
+        maskClosable={false}
+        keyboard={false}
+        okText={props.okText ? props.okText : '확인'}
+        cancelText={props.cancelText ? props.cancelText : '취소'}
+      >
         {props.children}
       </Modal>
     </>
