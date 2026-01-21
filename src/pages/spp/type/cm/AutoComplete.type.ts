@@ -40,7 +40,22 @@ export type AutoCompleteOrgItem = z.infer<typeof AutoCompleteOrgItemScheme>;
 export type AutoCompleteUserPage = z.infer<typeof AutoCompleteUserPageScheme>;
 export type AutoCompleteOrgPage = z.infer<typeof AutoCompleteOrgPageScheme>;
 
+export type AutoCompleteSearchParams = {
+  query: string;
+  cursor?: number;
+  size?: number;
+  etcParam1?: string;
+  etcParam2?: string;
+  etcParam3?: string;
+  etcParam4?: string;
+  etcParam5?: string;
+};
+
+export type AutoCompleteQueryArgs = Omit<AutoCompleteSearchParams, 'cursor'> & {
+  enabled?: boolean;
+};
+
 export enum AutoCompleteMode {
-  EMP,
+  USER,
   ORG,
 }

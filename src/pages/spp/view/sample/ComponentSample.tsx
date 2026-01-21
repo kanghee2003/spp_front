@@ -7,7 +7,8 @@ import SppInputText from '../../component/Input/SppInputText';
 import SppSelect from '../../component/Select/SppSelect';
 import SppSelectForm from '../../component/Select/SppSelectForm';
 import SamplePopup from './popup/SamplePopup';
-import ExcelUploadPopup from './popup/ExcelUploadPopup';
+import ExcelUploadPopup from '../../component/Excel/ExcelUploadPopup';
+import { ExcelUploadRowScheme } from '../../type/excel/ExcelUpload.type';
 import SppInputTextForm from '../../component/Input/SppInputTextForm';
 import SppInputNumberForm from '../../component/Input/SppInputNumberForm';
 import { useMessage } from '@/hook/useMessage';
@@ -190,19 +191,27 @@ const ComponentSample = () => {
           </Col>
         </Row>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={3}>
-            <SppAutoComplete mode={AutoCompleteMode.EMP} />
+          <Col span={3}>자동완성 사용자</Col>
+          <Col span={6}>
+            <SppAutoComplete mode={AutoCompleteMode.USER} onSelect={(value, options) => console.log(value, options)} />
           </Col>
-          <Col span={6}></Col>
-          <Col span={3}></Col>
-          <Col span={6}></Col>
+          <Col span={3}>자동완성 사용자 Form</Col>
+          <Col span={6}>
+            <SppAutoCompleteForm
+              name="autocomplete"
+              control={sampleControl}
+              mode={AutoCompleteMode.USER}
+              onSelect={(value, options) => console.log(value, options)}
+            />
+          </Col>
         </Row>
       </Card>
       <SamplePopup open={isOpen} title={'Test Title'} style={{ minWidth: '800px' }} onOk={() => setIsOpen(false)} onCancel={() => setIsOpen(false)} />
       <ExcelUploadPopup
         open={isExcelOpen}
-        title={'Excel Upload'}
+        title={'Excel Upload Sample'}
         style={{ minWidth: '600px' }}
+        rowScheme={ExcelUploadRowScheme}
         onUploaded={handleExcelUploaded}
         onOk={() => setIsExcelOpen(false)}
         onCancel={() => setIsExcelOpen(false)}

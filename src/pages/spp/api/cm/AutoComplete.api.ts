@@ -3,26 +3,23 @@ import type { ApiResponse } from '@/type/common.type';
 import {
   AutoCompleteOrgPage,
   AutoCompleteOrgPageScheme,
+  AutoCompleteSearchParams,
   AutoCompleteUserPage,
   AutoCompleteUserPageScheme,
 } from '../../type/cm/AutoComplete.type';
 
 export const AutoCompleteApi = () => {
-  const getAutoCompleteUserList = async (q: string, cursor: number, size = 20): Promise<AutoCompleteUserPage> => {
+  const getAutoCompleteUserList = async (params: AutoCompleteSearchParams): Promise<AutoCompleteUserPage> => {
     const response = await axiosService().get<ApiResponse<AutoCompleteUserPage>>(
       '/api/auto-complete/user',
-      { params: { q, cursor, size } },
+      { params: { ...params } },
       AutoCompleteUserPageScheme,
     );
     return response.item;
   };
 
-  const getAutoCompleteOrgList = async (q: string, cursor: number, size = 20): Promise<AutoCompleteOrgPage> => {
-    const response = await axiosService().get<ApiResponse<AutoCompleteOrgPage>>(
-      '/api/auto-complete/org',
-      { params: { q, cursor, size } },
-      AutoCompleteOrgPageScheme,
-    );
+  const getAutoCompleteOrgList = async (params: AutoCompleteSearchParams): Promise<AutoCompleteOrgPage> => {
+    const response = await axiosService().get<ApiResponse<AutoCompleteOrgPage>>('/api/auto-complete/org', { params: { ...params } }, AutoCompleteOrgPageScheme);
     return response.item;
   };
 
