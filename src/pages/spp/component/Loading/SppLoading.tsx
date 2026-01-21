@@ -9,8 +9,15 @@ const SppLoading = () => {
 
   return (
     <>
-      <div className={'loading_wrap'} style={{ display: isLoading.length > 0 ? '' : 'none' }}>
-        <div className={'loading_dim'}>
+      <div
+        className={'loading_wrap'}
+        style={{
+          display: isLoading.length > 0 ? '' : 'none',
+          top: 0,
+          left: 0,
+        }}
+      >
+        <div className={'loading_dim'} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Spin indicator={antIcon} delay={1.5} />
         </div>
       </div>

@@ -1,5 +1,5 @@
 import { AutoComplete, AutoCompleteProps, Spin } from 'antd';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { AutoCompleteService } from '../../service/cm/AutoComplete.service';
 import { AutoCompleteMode } from '../../type/cm/AutoComplete.type';
 
@@ -60,6 +60,28 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
     }
     return items;
   }, [query.data, mode]);
+
+  // 검색어가 바뀌면 드롭다운 스크롤을 첫 항목으로 올림
+  useEffect(() => {
+    if (!open) return;
+
+    // 선택 직후(displayValue set)에도 inputValue가 바뀌므로 그때 스크롤 튀는 거 방지
+    if (suppressNextOpen) return;
+
+    const t = window.setTimeout(() => {
+      const dropdownRoot = document.querySelector(`.${instanceCls}`) as HTMLElement | null;
+      if (!dropdownRoot) return;
+
+      const holder =
+        (dropdownRoot.querySelector('.rc-virtual-list-holder') as HTMLElement | null) ||
+        (dropdownRoot.querySelector('.ant-select-dropdown') as HTMLElement | null) ||
+        dropdownRoot;
+
+      holder.scrollTop = 0;
+    }, 0);
+
+    return () => window.clearTimeout(t);
+  }, [inputValue, open, instanceCls, suppressNextOpen]);
 
   return (
     <AutoComplete
