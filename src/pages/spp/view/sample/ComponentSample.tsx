@@ -18,6 +18,7 @@ import { useMdiStore } from '@/store/mdi.store';
 import { ComponentSampleOptions, ExcelUploadList, ExcelUploadRowScheme } from '../../type/ComponentSample.type';
 import SppAutoCompleteForm from '../../component/AutoComplete/SppAutocompleteForm';
 import { AutoCompleteMode } from '../../type/cm/AutoComplete.type';
+import { downloadFile } from '@/utils/download.util';
 
 type ComponentSampleFomeType = {
   select: string;
@@ -50,6 +51,10 @@ const ComponentSample = () => {
 
   const handlePrintFormValue = () => {
     alertMessage(JSON.stringify(getValues()));
+  };
+
+  const handleExcelDownload = async () => {
+    await downloadFile('/api/sample/excel/two-sheets', { filename: '매출_본부별.xlsx' });
   };
 
   useEffect(() => {
@@ -168,22 +173,27 @@ const ComponentSample = () => {
           </Col>
         </Row>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
-          <Col span={6}>
+          <Col span={5}>
             <SppButton type="default" htmlType="button" onClick={handlePrintFormValue}>
               Form 값 출력
             </SppButton>
           </Col>
-          <Col span={6}>
+          <Col span={5}>
             <SppButton type="default" htmlType="button" onClick={() => setIsOpen(true)}>
               팝업호출
             </SppButton>
           </Col>
-          <Col span={6}>
+          <Col span={5}>
             <SppButton type="default" htmlType="button" onClick={() => setIsExcelOpen(true)}>
               ExcelUpload
             </SppButton>
           </Col>
-          <Col span={6}>
+          <Col span={5}>
+            <SppButton type="default" htmlType="button" onClick={handleExcelDownload}>
+              ExcelDownload
+            </SppButton>
+          </Col>
+          <Col span={4}>
             <SppButton type="default" htmlType="button" onClick={() => openTab({ key: 'DASHBOARD', title: 'x' })}>
               대시보드로 이동
             </SppButton>

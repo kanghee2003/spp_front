@@ -42,22 +42,53 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
     const pages = query.data?.pages ?? [];
     const items: any[] = pages.flatMap((p) => p.items ?? []);
 
+    const rowStyle = {
+      display: 'flex',
+      alignItems: 'center',
+      gap: 8,
+      width: '100%',
+    };
+
+    const colStyle = {
+      overflow: 'hidden',
+      textOverflow: 'ellipsis',
+      whiteSpace: 'nowrap' as const,
+    };
+
+    const sepStyle = { opacity: 0.4 };
+
     if (mode === AutoCompleteMode.ORG) {
       return items.map((x) => ({
         ...x,
         value: `${x.orgCd} | ${x.orgCd}`,
-        label: `${x.orgCd} | ${x.orgCd}`,
         keyValue: x.orgCd,
+        label: (
+          <div style={rowStyle}>
+            <span style={{ ...colStyle }}>{x.orgCd}</span>
+            <span style={sepStyle}>|</span>
+            <span style={{ ...colStyle }}>{x.orgCd}</span>
+          </div>
+        ),
       }));
     }
+
     if (mode === AutoCompleteMode.USER) {
       return items.map((x) => ({
         ...x,
         value: `${x.userId} | ${x.gradeNm}`,
-        label: `${x.userId} | ${x.gradeNm} | ${x.orgNm}`,
         keyValue: x.userId,
+        label: (
+          <div style={rowStyle}>
+            <span style={{ ...colStyle }}>{x.userId}</span>
+            <span style={sepStyle}>|</span>
+            <span style={{ ...colStyle }}>{x.gradeNm}</span>
+            <span style={sepStyle}>|</span>
+            <span style={{ ...colStyle, flex: '1 1 auto' }}>{x.orgNm}</span>
+          </div>
+        ),
       }));
     }
+
     return items;
   }, [query.data, mode]);
 
