@@ -18,39 +18,9 @@ const HEADER_HEIGHT = 64;
 const SIDEBAR_WIDTH = 240;
 const SIDEBAR_COLLAPSED_WIDTH = 56;
 
-type BuildMenuOpts = {
-  siderCollapsed?: boolean;
-  onRootEnter?: (rootKey: string) => void;
-  onRootLeave?: () => void;
-  onRootClick?: (rootKey: string) => void;
-};
-
-const buildMenuItems = (tree: MenuNode[], opts?: BuildMenuOpts): NonNullable<MenuProps['items']> => {
-  const toItem = (node: MenuNode, depth = 0): NonNullable<MenuProps['items']>[number] => {
-    const isRoot = depth === 0;
-    const baseIcon = node.isLeaf ? <FileTextOutlined /> : <AppstoreOutlined />;
-    const icon =
-      opts?.siderCollapsed && isRoot
-        ? (
-            <span
-              onMouseEnter={(e) => {
-                e.stopPropagation();
-                opts.onRootEnter?.(node.key);
-              }}
-              onMouseLeave={(e) => {
-                e.stopPropagation();
-                opts.onRootLeave?.();
-              }}
-              onClick={(e) => {
-                e.stopPropagation();
-                opts.onRootClick?.(node.key);
-              }}
-              style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '100%' }}
-            >
-              {baseIcon}
-            </span>
-          )
-        : baseIcon;
+const buildMenuItems = (tree: MenuNode[]): NonNullable<MenuProps['items']> => {
+  const toItem = (node: MenuNode): NonNullable<MenuProps['items']>[number] => {
+    const icon = node.isLeaf ? <FileTextOutlined /> : <AppstoreOutlined />;
 
     // leaf
     if (node.isLeaf) {
@@ -66,7 +36,7 @@ const buildMenuItems = (tree: MenuNode[], opts?: BuildMenuOpts): NonNullable<Men
       key: node.key,
       label: node.label,
       icon,
-      children: (node.children ?? []).map((c: MenuNode) => toItem(c, depth + 1)),
+      children: (node.children ?? []).map((c: MenuNode) => toItem(c)),
     };
   };
 
@@ -80,9 +50,34 @@ const AppLayout = () => {
   const openTab = useMdiStore((s) => s.openTab);
   const setActive = useMdiStore((s) => s.setActive);
 
-  const [siderCollapsed, setSiderCollapsed] = useState(false);
-  const [hoverPanelOpen, setHoverPanelOpen] = useState(false);
-  const [hoverRootKey, setHoverRootKey] = useState<string | null>(null);
+  const topMenus = useMemo(() => {
+    return menuTree.filter((n) => n.key !== 'HOME');
+  }, [menuTree]);
+
+  // 좌측은 항상 아이콘 바(고정) + 플로팅 메뉴(hover/click)
+  const [floatingOpen, setFloatingOpen] = useState(false);
+  const [floatingPinned, setFloatingPinned] = useState(false);
+  const [floatingRootKey, setFloatingRootKey] = useState<string | null>(null);
+
+  const pinnedRef = useRef(false);
+  useEffect(() => {
+    pinnedRef.current = floatingPinned;
+  }, [floatingPinned]);
+
+  // 메뉴 트리가 바뀌면 기본 루트도 첫 번째 1뎁스로 맞춤
+  useEffect(() => {
+    if (!floatingRootKey && topMenus.length > 0) {
+      setFloatingRootKey(topMenus[0].key);
+      return;
+    }
+
+    if (floatingRootKey) {
+      const exists = topMenus.some((m) => m.key === floatingRootKey);
+      if (!exists) {
+        setFloatingRootKey(topMenus.length > 0 ? topMenus[0].key : null);
+      }
+    }
+  }, [floatingRootKey, topMenus]);
 
   const closeTimer = useRef<number | null>(null);
 
@@ -93,38 +88,24 @@ const AppLayout = () => {
     }
   }, []);
 
-  const scheduleCloseHoverPanel = useCallback(() => {
+  const scheduleCloseFloating = useCallback(() => {
     clearCloseTimer();
     closeTimer.current = window.setTimeout(() => {
-      setHoverPanelOpen(false);
-      setHoverRootKey(null);
+      if (pinnedRef.current) return;
+      setFloatingOpen(false);
     }, 120);
   }, [clearCloseTimer]);
 
-  const onRootEnter = useCallback(
-    (rootKey: string) => {
-      if (!siderCollapsed) return;
-      clearCloseTimer();
-      setHoverRootKey(rootKey);
-      setHoverPanelOpen(true);
-    },
-    [clearCloseTimer, siderCollapsed],
-  );
+  const openFloating = useCallback(() => {
+    clearCloseTimer();
+    setFloatingOpen(true);
+  }, [clearCloseTimer]);
 
-  const onRootLeave = useCallback(() => {
-    if (!siderCollapsed) return;
-    scheduleCloseHoverPanel();
-  }, [scheduleCloseHoverPanel, siderCollapsed]);
-
-  const onRootClick = useCallback(
-    (_rootKey: string) => {
-      if (!siderCollapsed) return;
-      setSiderCollapsed(false);
-      setHoverPanelOpen(false);
-      setHoverRootKey(null);
-    },
-    [siderCollapsed],
-  );
+  const closeFloating = useCallback(() => {
+    clearCloseTimer();
+    setFloatingOpen(false);
+    setFloatingPinned(false);
+  }, [clearCloseTimer]);
 
   // URL은 시스템 prefix로 고정(예: /spp, /etc)
   useEffect(() => {
@@ -144,22 +125,23 @@ const AppLayout = () => {
   }, [ensureDashboard]);
 
   const items = useMemo<NonNullable<MenuProps['items']>>(() => {
-    // eslint-disable-next-line react-hooks/refs
-    return buildMenuItems(menuTree, {
-      siderCollapsed,
-      onRootEnter,
-      onRootLeave,
-      onRootClick,
-    });
-  }, [menuTree, onRootClick, onRootEnter, onRootLeave, siderCollapsed]);
+    return buildMenuItems(menuTree);
+  }, [menuTree]);
 
-  const hoverItems = useMemo<NonNullable<MenuProps['items']>>(() => {
-    if (!hoverRootKey) return [];
-    const root = menuTree.find((n) => n.key === hoverRootKey);
-    if (!root || !root.children || root.children.length === 0) return [];
-    // hover 패널에서는 icon hover wrapper가 필요없음
-    return buildMenuItems(root.children);
-  }, [hoverRootKey, menuTree]);
+  const floatingItems = useMemo<NonNullable<MenuProps['items']>>(() => {
+    if (!floatingRootKey) return [];
+
+    const root = (items ?? []).find((it) => String(it?.key) === floatingRootKey) as any;
+    if (!root) return [];
+
+    // 1뎁스가 그룹이면 children만 보여주기(스크린샷 2처럼)
+    if (Array.isArray(root.children) && root.children.length > 0) {
+      return root.children as NonNullable<MenuProps['items']>;
+    }
+
+    // 1뎁스가 leaf인 경우는 단일 항목만
+    return [root] as NonNullable<MenuProps['items']>;
+  }, [floatingRootKey, items]);
 
   const defaultOpenKeys = useMemo(() => {
     return menuTree.filter((n) => n.key !== 'HOME').map((n) => n.key);
@@ -192,13 +174,88 @@ const AppLayout = () => {
 
     openTab({ key, title: label });
 
-    // 접힌 상태에서 hover 패널로 누른 경우 닫아주기
-    if (siderCollapsed) {
-      // 클릭 시 좌측 메뉴를 다시 펼친 상태로 전환
-      setSiderCollapsed(false);
-      setHoverPanelOpen(false);
-    }
+    // leaf 클릭하면 플로팅은 계속 열린 상태 유지(고정)
+    clearCloseTimer();
+    setFloatingPinned(true);
+    setFloatingOpen(true);
   };
+
+  const onHoverTopMenu = useCallback(
+    (node: MenuNode) => {
+      if (floatingPinned) return;
+      setFloatingRootKey(node.key);
+      openFloating();
+    },
+    [floatingPinned, openFloating]
+  );
+
+  const onClickTopMenu = useCallback(
+    (node: MenuNode) => {
+      clearCloseTimer();
+
+      // 같은 루트가 이미 고정되어 있으면 토글로 닫기
+      if (floatingOpen && floatingPinned && floatingRootKey === node.key) {
+        closeFloating();
+        return;
+      }
+
+      setFloatingRootKey(node.key);
+      setFloatingOpen(true);
+      setFloatingPinned(true);
+
+      // 1뎁스가 leaf면 탭 오픈까지
+      if (node.isLeaf) {
+        const label = labelMap.get(node.key) || node.label || node.key;
+        openTab({ key: node.key, title: label });
+      }
+    },
+    [clearCloseTimer, closeFloating, floatingOpen, floatingPinned, floatingRootKey, labelMap, openTab]
+  );
+
+  const onTopIconEnter = useCallback(
+    (rootKey: string) => {
+      if (floatingPinned) return;
+      setFloatingRootKey(rootKey);
+      openFloating();
+    },
+    [floatingPinned, openFloating],
+  );
+
+  const onTopIconLeave = useCallback(() => {
+    if (floatingPinned) return;
+    scheduleCloseFloating();
+  }, [floatingPinned, scheduleCloseFloating]);
+
+  const onTopIconClick = useCallback(
+    (rootKey: string) => {
+      clearCloseTimer();
+
+      if (floatingOpen && floatingPinned && floatingRootKey === rootKey) {
+        closeFloating();
+        return;
+      }
+
+      setFloatingRootKey(rootKey);
+      setFloatingOpen(true);
+      setFloatingPinned(true);
+
+      const root = topMenus.find((m) => m.key === rootKey);
+      if (root?.isLeaf) {
+        const label = labelMap.get(rootKey) || rootKey;
+        openTab({ key: rootKey, title: label });
+      }
+    },
+    [
+      clearCloseTimer,
+      closeFloating,
+      floatingOpen,
+      floatingPinned,
+      floatingRootKey,
+      labelMap,
+      openTab,
+      topMenus,
+    ],
+  );
 
 
 
@@ -218,10 +275,11 @@ const AppLayout = () => {
       </Header>
 
       <Layout>
+        {/* 1) 고정 아이콘 바 */}
         <Sider
-          width={SIDEBAR_WIDTH}
+          width={SIDEBAR_COLLAPSED_WIDTH}
           collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
-          collapsed={siderCollapsed}
+          collapsed
           trigger={null}
           style={{
             background: '#fff',
@@ -229,69 +287,105 @@ const AppLayout = () => {
             position: 'relative',
           }}
         >
-          {/* 접기 버튼: 메뉴가 펼쳐져 있을 때만 보이고, 우측 라인 끝(중앙)에 붙임 */}
-          {!siderCollapsed && (
+          <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {topMenus.map((m) => {
+              const active = floatingRootKey === m.key;
+
+              return (
+                <Button
+                  key={m.key}
+                  type={floatingPinned && active ? 'primary' : 'default'}
+                  icon={m.isLeaf ? <FileTextOutlined /> : <AppstoreOutlined />}
+                  onMouseEnter={() => {
+                    // 1뎁스 아이콘 위에 갔을 때만 플로팅 오픈
+                    if (floatingPinned) return;
+                    setFloatingRootKey(m.key);
+                    openFloating();
+                  }}
+                  onMouseLeave={() => {
+                    if (floatingPinned) return;
+                    scheduleCloseFloating();
+                  }}
+                  onClick={() => {
+                    clearCloseTimer();
+
+                    if (floatingOpen && floatingPinned && floatingRootKey === m.key) {
+                      closeFloating();
+                      return;
+                    }
+
+                    setFloatingRootKey(m.key);
+                    setFloatingPinned(true);
+                    setFloatingOpen(true);
+
+                    // 1뎁스가 leaf면 바로 탭 오픈
+                    if (m.isLeaf) {
+                      openTab({ key: m.key, title: m.label });
+                    }
+                  }}
+                  style={{ width: '100%' }}
+                />
+              );
+            })}
+          </div>
+        </Sider>
+
+        {/* 2) 플로팅 메뉴 */}
+        {floatingOpen && floatingItems.length > 0 && (
+          <>
+            <div
+              onMouseEnter={() => {
+                if (floatingPinned) return;
+                openFloating();
+              }}
+              onMouseLeave={() => {
+                if (floatingPinned) return;
+                scheduleCloseFloating();
+              }}
+              style={{
+                position: 'fixed',
+                top: HEADER_HEIGHT,
+                left: SIDEBAR_COLLAPSED_WIDTH,
+                height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+                width: SIDEBAR_WIDTH,
+                background: '#fff',
+                borderRight: floatingPinned ? '1px solid rgba(22,119,255,0.35)' : '1px solid rgba(0,0,0,0.10)',
+                boxShadow: floatingPinned
+                  ? '0 6px 20px rgba(0,0,0,0.12), 0 0 0 2px rgba(22,119,255,0.18)'
+                  : '0 6px 20px rgba(0,0,0,0.12)',
+                zIndex: 2000,
+                overflow: 'auto',
+              }}
+            >
+              <Menu
+                mode="inline"
+                items={floatingItems}
+                onClick={onClick}
+                openKeys={openKeys}
+                onOpenChange={(keys) => setOpenKeys(keys as string[])}
+                style={{ height: '100%' }}
+              />
+            </div>
+
+            {/* 3) 플로팅 오른쪽 경계에 붙는 닫기 패널(플로팅 오픈시에만 노출) */}
             <Button
               size="small"
               type="primary"
               icon={<MenuFoldOutlined />}
-              onClick={() => {
-                setSiderCollapsed(true);
-                setHoverPanelOpen(false);
-              }}
+              onClick={() => closeFloating()}
               style={{
-                position: 'absolute',
-                top: '10%',
-                right: -12,
-                transform: 'translateY(-50%)',
-                zIndex: 10,
+                position: 'fixed',
+                top: HEADER_HEIGHT + 12,
+                left: SIDEBAR_COLLAPSED_WIDTH + SIDEBAR_WIDTH - 12,
+                zIndex: 2100,
                 borderRadius: '0 8px 8px 0',
                 paddingInline: 6,
               }}
             />
-          )}
-
-          <Menu
-            mode="inline"
-            items={items}
-            onClick={onClick}
-            openKeys={siderCollapsed ? [] : openKeys}
-            onOpenChange={(keys) => setOpenKeys(keys as string[])}
-            inlineCollapsed={siderCollapsed}
-            style={{ height: '100%' }}
-          />
-        </Sider>
-
-        {/* 접힌 상태에서 마우스 오버 시 메뉴 목록 패널 */}
-		{siderCollapsed && hoverPanelOpen && hoverRootKey && hoverItems.length > 0 && (
-          <div
-            onMouseEnter={() => clearCloseTimer()}
-            onMouseLeave={() => scheduleCloseHoverPanel()}
-            style={{
-              position: 'fixed',
-              top: HEADER_HEIGHT,
-              left: SIDEBAR_COLLAPSED_WIDTH,
-              height: `calc(100vh - ${HEADER_HEIGHT}px)`,
-              width: SIDEBAR_WIDTH,
-              background: '#fff',
-              borderRight: '1px solid rgba(0,0,0,0.10)',
-              boxShadow: '0 6px 20px rgba(0,0,0,0.12)',
-              zIndex: 2000,
-              overflow: 'auto',
-            }}
-          >
-			<Menu
-			  mode="inline"
-			  items={hoverItems}
-              onClick={onClick}
-              openKeys={openKeys}
-              onOpenChange={(keys) => setOpenKeys(keys as string[])}
-              style={{ height: '100%' }}
-            />
-          </div>
+          </>
         )}
 
-        <Layout>
+        <Layout style={{ marginLeft: floatingOpen ? SIDEBAR_WIDTH : 0, transition: 'margin-left 0.2s ease' }}>
           <MDITabs />
           <Content style={{ padding: 16, overflow: 'auto' }}>
             <PageHost />
