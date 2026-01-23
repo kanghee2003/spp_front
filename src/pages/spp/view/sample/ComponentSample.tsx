@@ -22,6 +22,7 @@ import { downloadFile } from '@/utils/download.util';
 
 type ComponentSampleFomeType = {
   select: string;
+  multiselect: string;
   inputtext: string;
   inputnumber: string;
   datepicker: string;
@@ -113,6 +114,43 @@ const ComponentSample = () => {
           <Col span={6}>
             <SppSelectForm
               name="select"
+              style={{ width: 120 }}
+              control={sampleControl}
+              placeholder="Select a person"
+              options={[
+                { value: 'jack', label: 'Jack' },
+                { value: 'lucy', label: 'Lucy' },
+                { value: 'Yiminghe', label: 'yiminghe' },
+                { value: 'disabled', label: 'Disabled', disabled: true },
+              ]}
+            />
+          </Col>
+        </Row>
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={3}>
+            <Typography.Text>MULTI SELECT</Typography.Text>
+          </Col>
+          <Col span={6}>
+            <SppSelect
+              mode="multiple"
+              style={{ width: 120 }}
+              placeholder="Select a person"
+              options={[
+                { value: 'jack', label: 'Jack' },
+                { value: 'lucy', label: 'Lucy' },
+                { value: 'Yiminghe', label: 'yiminghe' },
+                { value: 'disabled', label: 'Disabled', disabled: true },
+              ]}
+            />
+          </Col>
+          <Col span={3}>
+            <Typography.Text>Select Form</Typography.Text>
+          </Col>
+          <Col span={6}>
+            <SppSelectForm
+              mode="multiple"
+              name="multiselect"
+              defaultValue={['jack', 'lucy']}
               style={{ width: 120 }}
               control={sampleControl}
               placeholder="Select a person"
