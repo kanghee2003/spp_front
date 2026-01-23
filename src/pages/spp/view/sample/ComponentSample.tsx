@@ -128,7 +128,7 @@ const ComponentSample = () => {
         </Row>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
           <Col span={3}>
-            <Typography.Text>MULTI SELECT</Typography.Text>
+            <Typography.Text>Multi Select</Typography.Text>
           </Col>
           <Col span={6}>
             <SppSelect
@@ -144,7 +144,7 @@ const ComponentSample = () => {
             />
           </Col>
           <Col span={3}>
-            <Typography.Text>Select Form</Typography.Text>
+            <Typography.Text>Multi Select Form</Typography.Text>
           </Col>
           <Col span={6}>
             <SppSelectForm
