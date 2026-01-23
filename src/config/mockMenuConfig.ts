@@ -18,6 +18,7 @@ export const menuTreeSpp: MenuNode[] = [
     children: [
       { key: 'SAMPLE1', path: 'sample/Sample1', label: 'Sample1', isLeaf: true },
       { key: 'Compnent', path: 'sample/ComponentSample', label: 'Component', isLeaf: true },
+      { key: 'Editor', path: 'sample/EditorSample', label: 'Editor', isLeaf: true },
     ],
   },
 ];
