@@ -15,7 +15,7 @@ const GlobalMessageProvider = () => {
   useEffect(() => {
     if (!alertState?.isOpen) return;
 
-    const sig = `alert|${alertState.message}|${alertState.okText ?? ''}`;
+    const sig = `alert|${alertState.requestId ?? ''}`;
     if (lastAlertSig.current === sig) {
       closeAlert();
       return;
@@ -29,12 +29,12 @@ const GlobalMessageProvider = () => {
     });
 
     closeAlert();
-  }, [alertState?.isOpen, alertState?.message, alertState?.okText, alertState?.onClickOK, closeAlert]);
+  }, [alertState?.isOpen, alertState?.requestId, alertState?.message, alertState?.okText, alertState?.onClickOK, closeAlert]);
 
   useEffect(() => {
     if (!confirmState?.isOpen) return;
 
-    const sig = `confirm|${confirmState.message}|${confirmState.okText ?? ''}|${confirmState.cancelText ?? ''}`;
+    const sig = `confirm|${confirmState.requestId ?? ''}`;
     if (lastConfirmSig.current === sig) {
       closeConfirm();
       return;
@@ -52,6 +52,7 @@ const GlobalMessageProvider = () => {
     closeConfirm();
   }, [
     confirmState?.isOpen,
+    confirmState?.requestId,
     confirmState?.message,
     confirmState?.okText,
     confirmState?.cancelText,

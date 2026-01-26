@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 export type ConfirmState = {
+  requestId?: string;
   message: string;
   okText?: string;
   cancelText?: string;
@@ -10,6 +11,7 @@ export type ConfirmState = {
 };
 
 export type AlertState = {
+  requestId?: string;
   message: string;
   okText?: string;
   onClickOK: () => void;

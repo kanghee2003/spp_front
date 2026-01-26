@@ -47,7 +47,7 @@ export const useMdiStore = create<State>((set, get) => ({
       return;
     }
 
-
+    // 혹시 기존 상태가 MAX를 초과한 경우를 대비해 보정
     if (tabs.length > MAX_MDI_TABS) {
       const dash = tabs[0];
       const rest = tabs.slice(1);
