@@ -20,6 +20,9 @@ type State = {
 
 const DASHBOARD_KEY = DEFAULT_SCREEN_KEY;
 
+/** MDI 상단 탭바에서 열 수 있는 최대 탭 수 (대시보드 포함) */
+const MAX_MDI_TABS = 10;
+
 export const useMdiStore = create<State>((set, get) => ({
   tabs: [],
   activeKey: DASHBOARD_KEY,
@@ -38,16 +41,50 @@ export const useMdiStore = create<State>((set, get) => ({
     // 대시보드는 항상 첫번째 고정
     if (tabs[0]?.key !== DASHBOARD_KEY) {
       const rest = tabs.filter((t) => t.key !== DASHBOARD_KEY);
-      set({
-        tabs: [{ key: DASHBOARD_KEY, title: 'Dashboard' }, ...rest],
-      });
+      const keep = rest.slice(Math.max(0, rest.length - (MAX_MDI_TABS - 1)));
+      const nextTabs = [{ key: DASHBOARD_KEY, title: 'Dashboard' }, ...keep];
+      set({ tabs: nextTabs });
+      return;
+    }
+
+
+    if (tabs.length > MAX_MDI_TABS) {
+      const dash = tabs[0];
+      const rest = tabs.slice(1);
+      set({ tabs: [dash, ...rest.slice(rest.length - (MAX_MDI_TABS - 1))] });
     }
   },
 
   openTab: (tab) =>
     set((state) => {
       const exists = state.tabs.some((t) => t.key === tab.key);
-      const nextTabs = exists ? state.tabs : [...state.tabs, tab];
+      let nextTabs = exists ? state.tabs : [...state.tabs, tab];
+
+      // 최대 탭 수 초과 시, 가장 왼쪽(대시보드 다음)부터 자동으로 닫기
+      if (!exists && nextTabs.length > MAX_MDI_TABS) {
+        const hasDashboard = nextTabs.some((t) => t.key === DASHBOARD_KEY);
+
+        // 대시보드는 항상 유지/첫번째 고정
+        if (hasDashboard) {
+          const dashIdx = nextTabs.findIndex((t) => t.key === DASHBOARD_KEY);
+          if (dashIdx > 0) {
+            const [dash] = nextTabs.splice(dashIdx, 1);
+            nextTabs.unshift(dash);
+          }
+        }
+
+        const overflow = nextTabs.length - MAX_MDI_TABS;
+        if (overflow > 0) {
+          if (hasDashboard && nextTabs[0]?.key === DASHBOARD_KEY) {
+            const dash = nextTabs[0];
+            const rest = nextTabs.slice(1);
+            nextTabs = [dash, ...rest.slice(overflow)];
+          } else {
+            nextTabs = nextTabs.slice(overflow);
+          }
+        }
+      }
+
       return { tabs: nextTabs, activeKey: tab.key };
     }),
 
