@@ -71,3 +71,12 @@ a {
 .selected-row {
   background-color: lightgray;
 }
+
+/* left 1-depth buttons: no blue highlight on hover */
+.sider-topmenu-btn.ant-btn-text:not(:disabled):hover {
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+
+.sider-topmenu-btn.ant-btn-text:not(:disabled):hover .anticon {
+  color: rgba(0, 0, 0, 0.88) !important;
+}

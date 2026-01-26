@@ -1,7 +1,7 @@
 import { AppstoreOutlined, FileTextOutlined, MenuFoldOutlined } from '@ant-design/icons';
 import { Button, Layout, Menu, Typography } from 'antd';
 import type { MenuProps } from 'antd';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { MenuNode } from '@/config/mockMenuConfig';
 import { DEFAULT_SCREEN_KEY } from '@/config/mockMenuConfig';
@@ -14,9 +14,9 @@ import { Footer } from 'antd/es/layout/layout';
 
 const { Header, Sider, Content } = Layout;
 
-const HEADER_HEIGHT = 64;
 const SIDEBAR_WIDTH = 240;
 const SIDEBAR_COLLAPSED_WIDTH = 56;
+const ICON_AREA_WIDTH = SIDEBAR_COLLAPSED_WIDTH;
 
 const buildMenuItems = (tree: MenuNode[]): NonNullable<MenuProps['items']> => {
   const toItem = (node: MenuNode): NonNullable<MenuProps['items']>[number] => {
@@ -54,15 +54,12 @@ const AppLayout = () => {
     return menuTree.filter((n) => n.key !== 'HOME');
   }, [menuTree]);
 
-  // 좌측은 항상 아이콘 바(고정) + 플로팅 메뉴(hover/click)
+  // 좌측은 항상 아이콘 바(고정) + 플로팅 메뉴(click)
   const [floatingOpen, setFloatingOpen] = useState(false);
-  const [floatingPinned, setFloatingPinned] = useState(false);
   const [floatingRootKey, setFloatingRootKey] = useState<string | null>(null);
 
-  const pinnedRef = useRef(false);
-  useEffect(() => {
-    pinnedRef.current = floatingPinned;
-  }, [floatingPinned]);
+  // 좌측 1뎁스는 기본적으로 펼침(아이콘 + 메뉴명)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   // 메뉴 트리가 바뀌면 기본 루트도 첫 번째 1뎁스로 맞춤
   useEffect(() => {
@@ -79,33 +76,24 @@ const AppLayout = () => {
     }
   }, [floatingRootKey, topMenus]);
 
-  const closeTimer = useRef<number | null>(null);
+  const closeFloating = () => setFloatingOpen(false);
 
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimer.current) {
-      window.clearTimeout(closeTimer.current);
-      closeTimer.current = null;
-    }
-  }, []);
+  const siderRef = useRef<HTMLDivElement | null>(null);
 
-  const scheduleCloseFloating = useCallback(() => {
-    clearCloseTimer();
-    closeTimer.current = window.setTimeout(() => {
-      if (pinnedRef.current) return;
+  // 바깥 클릭 시 플로팅 닫기
+  useEffect(() => {
+    if (!floatingOpen) return;
+
+    const onDown = (e: MouseEvent) => {
+      const target = e.target as Node | null;
+      if (!target) return;
+      if (siderRef.current && siderRef.current.contains(target)) return;
       setFloatingOpen(false);
-    }, 120);
-  }, [clearCloseTimer]);
+    };
 
-  const openFloating = useCallback(() => {
-    clearCloseTimer();
-    setFloatingOpen(true);
-  }, [clearCloseTimer]);
-
-  const closeFloating = useCallback(() => {
-    clearCloseTimer();
-    setFloatingOpen(false);
-    setFloatingPinned(false);
-  }, [clearCloseTimer]);
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, [floatingOpen]);
 
   // URL은 시스템 prefix로 고정(예: /spp, /etc)
   useEffect(() => {
@@ -174,90 +162,10 @@ const AppLayout = () => {
 
     openTab({ key, title: label });
 
-    // leaf 클릭하면 플로팅은 계속 열린 상태 유지(고정)
-    clearCloseTimer();
-    setFloatingPinned(true);
-    setFloatingOpen(true);
+    closeFloating();
   };
 
-  const onHoverTopMenu = useCallback(
-    (node: MenuNode) => {
-      if (floatingPinned) return;
-      setFloatingRootKey(node.key);
-      openFloating();
-    },
-    [floatingPinned, openFloating]
-  );
-
-  const onClickTopMenu = useCallback(
-    (node: MenuNode) => {
-      clearCloseTimer();
-
-      // 같은 루트가 이미 고정되어 있으면 토글로 닫기
-      if (floatingOpen && floatingPinned && floatingRootKey === node.key) {
-        closeFloating();
-        return;
-      }
-
-      setFloatingRootKey(node.key);
-      setFloatingOpen(true);
-      setFloatingPinned(true);
-
-      // 1뎁스가 leaf면 탭 오픈까지
-      if (node.isLeaf) {
-        const label = labelMap.get(node.key) || node.label || node.key;
-        openTab({ key: node.key, title: label });
-      }
-    },
-    [clearCloseTimer, closeFloating, floatingOpen, floatingPinned, floatingRootKey, labelMap, openTab]
-  );
-
-  const onTopIconEnter = useCallback(
-    (rootKey: string) => {
-      if (floatingPinned) return;
-      setFloatingRootKey(rootKey);
-      openFloating();
-    },
-    [floatingPinned, openFloating],
-  );
-
-  const onTopIconLeave = useCallback(() => {
-    if (floatingPinned) return;
-    scheduleCloseFloating();
-  }, [floatingPinned, scheduleCloseFloating]);
-
-  const onTopIconClick = useCallback(
-    (rootKey: string) => {
-      clearCloseTimer();
-
-      if (floatingOpen && floatingPinned && floatingRootKey === rootKey) {
-        closeFloating();
-        return;
-      }
-
-      setFloatingRootKey(rootKey);
-      setFloatingOpen(true);
-      setFloatingPinned(true);
-
-      const root = topMenus.find((m) => m.key === rootKey);
-      if (root?.isLeaf) {
-        const label = labelMap.get(rootKey) || rootKey;
-        openTab({ key: rootKey, title: label });
-      }
-    },
-    [
-      clearCloseTimer,
-      closeFloating,
-      floatingOpen,
-      floatingPinned,
-      floatingRootKey,
-      labelMap,
-      openTab,
-      topMenus,
-    ],
-  );
-
-
+  const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED_WIDTH : SIDEBAR_WIDTH;
 
   return (
     <Layout style={{ height: '100vh' }}>
@@ -277,115 +185,123 @@ const AppLayout = () => {
       <Layout>
         {/* 1) 고정 아이콘 바 */}
         <Sider
-          width={SIDEBAR_COLLAPSED_WIDTH}
+          width={sidebarWidth}
           collapsedWidth={SIDEBAR_COLLAPSED_WIDTH}
-          collapsed
+          collapsed={sidebarCollapsed}
           trigger={null}
           style={{
             background: '#fff',
             borderRight: '1px solid rgba(0,0,0,0.06)',
             position: 'relative',
+            overflow: 'hidden',
           }}
         >
-          <div style={{ padding: 8, display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {topMenus.map((m) => {
-              const active = floatingRootKey === m.key;
-
-              return (
+          <div ref={siderRef} style={{ paddingTop: 8, height: '100%', position: 'relative' }}>
+            {!sidebarCollapsed && (
+              <div style={{ padding: '0 8px', display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
                 <Button
-                  key={m.key}
-                  type={floatingPinned && active ? 'primary' : 'default'}
-                  icon={m.isLeaf ? <FileTextOutlined /> : <AppstoreOutlined />}
-                  onMouseEnter={() => {
-                    // 1뎁스 아이콘 위에 갔을 때만 플로팅 오픈
-                    if (floatingPinned) return;
-                    setFloatingRootKey(m.key);
-                    openFloating();
-                  }}
-                  onMouseLeave={() => {
-                    if (floatingPinned) return;
-                    scheduleCloseFloating();
-                  }}
+                  size="small"
+                  icon={<MenuFoldOutlined />}
                   onClick={() => {
-                    clearCloseTimer();
-
-                    if (floatingOpen && floatingPinned && floatingRootKey === m.key) {
-                      closeFloating();
-                      return;
-                    }
-
-                    setFloatingRootKey(m.key);
-                    setFloatingPinned(true);
-                    setFloatingOpen(true);
-
-                    // 1뎁스가 leaf면 바로 탭 오픈
-                    if (m.isLeaf) {
-                      openTab({ key: m.key, title: m.label });
-                    }
+                    setSidebarCollapsed(true);
+                    closeFloating();
                   }}
-                  style={{ width: '100%' }}
                 />
-              );
-            })}
+              </div>
+            )}
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {topMenus.map((m) => {
+                const iconNode = m.isLeaf ? <FileTextOutlined /> : <AppstoreOutlined />;
+                return (
+                  <Button
+                    key={m.key}
+                    className="sider-topmenu-btn"
+                    type="text"
+                    onClick={() => {
+                      // 접힌 상태에서는 아이콘 클릭 시 펼쳐지도록
+                      if (sidebarCollapsed) setSidebarCollapsed(false);
+
+                      if (m.isLeaf) {
+                        openTab({ key: m.key, title: m.label });
+                        closeFloating();
+                        return;
+                      }
+
+                      setFloatingRootKey(m.key);
+                      setFloatingOpen((prev) => {
+                        if (floatingRootKey === m.key) return !prev;
+                        return true;
+                      });
+                    }}
+                    style={{
+                      width: '100%',
+                      padding: 0,
+                      height: 40,
+                      justifyContent: 'flex-start',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <span
+                      style={{
+                        width: ICON_AREA_WIDTH,
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'flex-start',
+                        paddingLeft: 12,
+                        flexShrink: 0,
+                      }}
+                    >
+                      {iconNode}
+                    </span>
+                    {!sidebarCollapsed && (
+                      <span
+                        style={{
+                          display: 'inline-block',
+                          minWidth: 0,
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {m.label}
+                      </span>
+                    )}
+                  </Button>
+                );
+              })}
+            </div>
+
+            {/* 플로팅 메뉴 (컨텐츠 영역을 밀지 않도록 Sider 내부에서만 표시) */}
+            {floatingOpen && floatingItems.length > 0 && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 0,
+                  left: ICON_AREA_WIDTH,
+                  right: 0,
+                  bottom: 0,
+                  background: '#fff',
+                  borderLeft: '1px solid rgba(0,0,0,0.08)',
+                  boxShadow: '6px 0 20px rgba(0,0,0,0.12)',
+                  zIndex: 10,
+                  overflow: 'auto',
+                }}
+              >
+                <Menu
+                  mode="inline"
+                  items={floatingItems}
+                  onClick={onClick}
+                  openKeys={openKeys}
+                  onOpenChange={(keys) => setOpenKeys(keys as string[])}
+                  style={{ height: '100%' }}
+                />
+              </div>
+            )}
           </div>
         </Sider>
 
-        {/* 2) 플로팅 메뉴 */}
-        {floatingOpen && floatingItems.length > 0 && (
-          <>
-            <div
-              onMouseEnter={() => {
-                if (floatingPinned) return;
-                openFloating();
-              }}
-              onMouseLeave={() => {
-                if (floatingPinned) return;
-                scheduleCloseFloating();
-              }}
-              style={{
-                position: 'fixed',
-                top: HEADER_HEIGHT,
-                left: SIDEBAR_COLLAPSED_WIDTH,
-                height: `calc(100vh - ${HEADER_HEIGHT}px)`,
-                width: SIDEBAR_WIDTH,
-                background: '#fff',
-                borderRight: floatingPinned ? '1px solid rgba(22,119,255,0.35)' : '1px solid rgba(0,0,0,0.10)',
-                boxShadow: floatingPinned
-                  ? '0 6px 20px rgba(0,0,0,0.12), 0 0 0 2px rgba(22,119,255,0.18)'
-                  : '0 6px 20px rgba(0,0,0,0.12)',
-                zIndex: 2000,
-                overflow: 'auto',
-              }}
-            >
-              <Menu
-                mode="inline"
-                items={floatingItems}
-                onClick={onClick}
-                openKeys={openKeys}
-                onOpenChange={(keys) => setOpenKeys(keys as string[])}
-                style={{ height: '100%' }}
-              />
-            </div>
-
-            {/* 3) 플로팅 오른쪽 경계에 붙는 닫기 패널(플로팅 오픈시에만 노출) */}
-            <Button
-              size="small"
-              type="primary"
-              icon={<MenuFoldOutlined />}
-              onClick={() => closeFloating()}
-              style={{
-                position: 'fixed',
-                top: HEADER_HEIGHT + 12,
-                left: SIDEBAR_COLLAPSED_WIDTH + SIDEBAR_WIDTH - 12,
-                zIndex: 2100,
-                borderRadius: '0 8px 8px 0',
-                paddingInline: 6,
-              }}
-            />
-          </>
-        )}
-
-        <Layout style={{ marginLeft: floatingOpen ? SIDEBAR_WIDTH : 0, transition: 'margin-left 0.2s ease' }}>
+        <Layout>
           <MDITabs />
           <Content style={{ padding: 16, overflow: 'auto' }}>
             <PageHost />
