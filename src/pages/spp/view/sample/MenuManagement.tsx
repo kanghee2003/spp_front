@@ -1,238 +1,206 @@
-import React, { useMemo, useState } from 'react';
-import { Tabs, Tree, Form, Input, Radio, Button, Space, Card, Divider, Typography, message, List } from 'antd';
+import { Button, Card, Descriptions, Form, Input, InputNumber, Layout, Radio, Space, Tag, Tree, Typography } from 'antd';
 import type { DataNode } from 'antd/es/tree';
+import React, { useMemo, useState } from 'react';
 
-const { Text } = Typography;
+const { Sider, Content } = Layout;
+const { Title } = Typography;
 
-type MenuItem = {
-  id: string;
-  parentId?: string | null;
-  name: string;
-  path?: string;
-  cssClass?: string;
-  actionId?: string;
+type MenuInfo = {
+  menuId: string;
+  upperMenuId: string;
+  menuNm: string;
+  menuDispNm: string;
+  menuLevel: number;
+  actId: string;
+  scriptNm: string;
+  menuType: string;
   useYn: 'Y' | 'N';
-  sortNo?: number;
   remark?: string;
-  type: 'MENU' | 'MYMENU';
 };
 
-// ---- mock 데이터 ----
-const mockMenus: MenuItem[] = [
-  { id: 'M1', parentId: null, name: '통합결재목록', path: '/appr/list', useYn: 'Y', type: 'MENU', sortNo: 1 },
-  { id: 'M1-1', parentId: 'M1', name: '결재함', path: '/appr/box', useYn: 'Y', type: 'MENU', sortNo: 1 },
-  { id: 'M1-2', parentId: 'M1', name: '기안함', path: '/appr/draft', useYn: 'Y', type: 'MENU', sortNo: 2 },
-  { id: 'M2', parentId: null, name: '정보보호', path: '/sec', useYn: 'Y', type: 'MENU', sortNo: 2 },
-  { id: 'M2-1', parentId: 'M2', name: '점검', path: '/sec/audit', useYn: 'N', type: 'MENU', sortNo: 1 },
-];
+const MOCK_BY_KEY: Record<string, MenuInfo> = {
+  MENU_WORK_ISPS_3030: {
+    menuId: 'MENU_WORK_ISPS_3030',
+    upperMenuId: 'MENU_WORK_ISPS_3000',
+    menuNm: '개인정보보호담당자결재',
+    menuDispNm: '개인정보보호 담당자결재',
+    menuLevel: 2,
+    actId: 'ACTN_WORK_ISPS_3030_0000',
+    scriptNm: 'selfCall',
+    menuType: 'L',
+    useYn: 'Y',
+    remark: '',
+  },
+  MENU_WORK_ISPS_3050: {
+    menuId: 'MENU_WORK_ISPS_3050',
+    upperMenuId: 'MENU_WORK_ISPS_3000',
+    menuNm: '유통등록',
+    menuDispNm: '유통 등록',
+    menuLevel: 2,
+    actId: 'ACTN_WORK_ISPS_3050_0000',
+    scriptNm: 'selfCall',
+    menuType: 'L',
+    useYn: 'N',
+    remark: '테스트 비고',
+  },
+};
 
-const mockMyMenuList: MenuItem[] = [
-  { id: 'MY1', parentId: null, name: '정보보안', path: '/sec/info', useYn: 'Y', type: 'MYMENU', sortNo: 1 },
-  { id: 'MY2', parentId: null, name: '문서반출 시스템', path: '/sec/docout', useYn: 'Y', type: 'MYMENU', sortNo: 2 },
-  { id: 'MY3', parentId: null, name: '개인정보 관리시스템', path: '/sec/privacy', useYn: 'Y', type: 'MYMENU', sortNo: 3 },
-  { id: 'MY4', parentId: null, name: '영상정보기기 관리시스템', path: '/sec/cctv', useYn: 'N', type: 'MYMENU', sortNo: 4 },
-];
+export default function MenuInfoPage() {
+  const [selectedKey, setSelectedKey] = useState<string>('MENU_WORK_ISPS_3030');
+  const [mode, setMode] = useState<'view' | 'edit'>('view');
 
-// ---- 유틸: 평면 리스트 -> Tree Data ----
-function buildTree(nodes: MenuItem[]): DataNode[] {
-  const byParent = new Map<string | null, MenuItem[]>();
-  for (const n of nodes) {
-    const key = n.parentId ?? null;
-    if (!byParent.has(key)) byParent.set(key, []);
-    byParent.get(key)!.push(n);
-  }
+  const data = useMemo<MenuInfo>(() => {
+    return MOCK_BY_KEY[selectedKey] ?? Object.values(MOCK_BY_KEY)[0];
+  }, [selectedKey]);
 
-  const make = (parentId: string | null): DataNode[] => {
-    const children = (byParent.get(parentId) ?? []).sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0));
-    return children.map((c) => ({
-      key: c.id,
-      title: c.name,
-      children: make(c.id),
-    }));
+  const treeData = useMemo<DataNode[]>(
+    () => [
+      {
+        key: 'ROOT',
+        title: '메뉴목록',
+        children: [
+          { key: 'MENU_WORK_ISPS_3030', title: '개인정보보호담당자결재' },
+          { key: 'MENU_WORK_ISPS_3050', title: '유통등록' },
+        ],
+      },
+    ],
+    [],
+  );
+
+  const handleSelect = (keys: React.Key[]) => {
+    const k = String(keys?.[0] ?? '');
+    if (!k || k === 'ROOT') return;
+    setSelectedKey(k);
+    setMode('view');
   };
 
-  return make(null);
+  return (
+    <Layout style={{ height: '100%', minHeight: 720, background: '#fff', border: '1px solid #eee' }}>
+      <Sider width={280} style={{ background: '#fff', borderRight: '1px solid #eee', padding: 12 }}>
+        <Title level={5} style={{ margin: 0, marginBottom: 12 }}>
+          메뉴목록
+        </Title>
+
+        <Tree defaultExpandAll showLine selectedKeys={[selectedKey]} treeData={treeData} onSelect={handleSelect} />
+      </Sider>
+
+      <Content style={{ padding: 16 }}>
+        {mode === 'view' ? (
+          <MenuInfoView data={data} onEdit={() => setMode('edit')} onDelete={() => console.log('delete', data.menuId)} />
+        ) : (
+          <MenuInfoEdit
+            initialValues={data}
+            onSubmit={(v) => {
+              console.log('save', v);
+              // 실제로는 여기서 API 호출 후 성공하면 view로 전환
+              setMode('view');
+            }}
+            onCancel={() => setMode('view')}
+          />
+        )}
+      </Content>
+    </Layout>
+  );
 }
 
-export default function MenuManagePage() {
-  const [activeKey, setActiveKey] = useState<'tab1' | 'tab2'>('tab1');
-
-  const treeData = useMemo(() => buildTree(mockMenus), []);
-  const [selected, setSelected] = useState<MenuItem | null>(null);
-  const formEnabled = !!selected;
-
-  const [form] = Form.useForm<MenuItem>();
-
-  const selectItem = (item: MenuItem) => {
-    setSelected(item);
-    form.setFieldsValue(item);
-  };
-
-  const onTreeSelect = (keys: React.Key[]) => {
-    const id = String(keys?.[0] ?? '');
-    if (!id) return;
-
-    const found = mockMenus.find((m) => m.id === id);
-    if (!found) return;
-
-    selectItem(found);
-  };
-
-  const onNew = () => {
-    const empty: MenuItem = {
-      id: '',
-      parentId: null,
-      name: '',
-      path: '',
-      cssClass: '',
-      actionId: '',
-      useYn: 'Y',
-      sortNo: 1,
-      remark: '',
-      type: activeKey === 'tab1' ? 'MENU' : 'MYMENU',
-    };
-    setSelected(empty);
-    form.setFieldsValue(empty);
-  };
-
-  const onSave = async () => {
-    try {
-      const values = await form.validateFields();
-      message.success(`저장(샘플): ${values.name}`);
-      setSelected(values);
-    } catch {
-      // validation error
-    }
-  };
-
-  const onDelete = () => {
-    if (!selected?.id) return message.info('새 항목은 삭제할 수 없어요.');
-    message.success(`삭제(샘플): ${selected.name}`);
-    setSelected(null);
-    form.resetFields();
-  };
-
-  const RightForm = (
+function MenuInfoView({ data, onEdit, onDelete }: { data: MenuInfo; onEdit: () => void; onDelete: () => void }) {
+  return (
     <Card
-      size="small"
-      title="메뉴 정보"
+      title="메뉴 정보조회"
       extra={
         <Space>
-          <Button onClick={onNew}>신규</Button>
-          <Button type="primary" onClick={onSave} disabled={!formEnabled}>
-            저장
-          </Button>
-          <Button danger onClick={onDelete} disabled={!formEnabled}>
+          <Button onClick={onEdit}>수정</Button>
+          <Button danger onClick={onDelete}>
             삭제
           </Button>
         </Space>
       }
-      style={{ height: '100%' }}
-      styles={{ body: { height: 'calc(100% - 56px)', overflow: 'auto' } }}
     >
-      {!formEnabled && (
-        <>
-          <Text type="secondary">왼쪽에서 항목을 선택하면 오른쪽 상세 정보가 표시돼요.</Text>
-          <Divider />
-        </>
-      )}
+      <Descriptions bordered size="small" column={2}>
+        <Descriptions.Item label="메뉴ID">{data.menuId}</Descriptions.Item>
+        <Descriptions.Item label="상위메뉴ID">{data.upperMenuId}</Descriptions.Item>
 
-      <Form form={form} layout="horizontal" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }} disabled={!formEnabled}>
-        <Form.Item label="ID" name="id">
-          <Input placeholder="(신규는 비워둠)" />
-        </Form.Item>
+        <Descriptions.Item label="메뉴명">{data.menuNm}</Descriptions.Item>
+        <Descriptions.Item label="메뉴표시명">{data.menuDispNm}</Descriptions.Item>
 
-        <Form.Item label="메뉴명" name="name" rules={[{ required: true, message: '메뉴명을 입력하세요.' }]}>
+        <Descriptions.Item label="메뉴레벨">{data.menuLevel}</Descriptions.Item>
+        <Descriptions.Item label="액션ID">{data.actId}</Descriptions.Item>
+
+        <Descriptions.Item label="스크립트명">{data.scriptNm}</Descriptions.Item>
+        <Descriptions.Item label="메뉴타입">{data.menuType}</Descriptions.Item>
+
+        <Descriptions.Item label="사용여부">{data.useYn === 'Y' ? <Tag color="green">사용(Y)</Tag> : <Tag color="red">미사용(N)</Tag>}</Descriptions.Item>
+        <Descriptions.Item label="비고">{data.remark || '-'}</Descriptions.Item>
+      </Descriptions>
+    </Card>
+  );
+}
+
+function MenuInfoEdit({ initialValues, onSubmit, onCancel }: { initialValues: Partial<MenuInfo>; onSubmit: (values: MenuInfo) => void; onCancel: () => void }) {
+  const [form] = Form.useForm<MenuInfo>();
+
+  return (
+    <Card title="메뉴 정보수정">
+      <Form<MenuInfo>
+        form={form}
+        layout="vertical"
+        initialValues={{
+          useYn: 'Y',
+          menuLevel: 1,
+          ...initialValues,
+        }}
+        onFinish={onSubmit}
+      >
+        <Form.Item name="menuId" label="메뉴ID" rules={[{ required: true, message: '메뉴ID는 필수입니다.' }]}>
           <Input />
         </Form.Item>
 
-        <Form.Item label="URL" name="path">
+        <Form.Item name="upperMenuId" label="상위메뉴ID" rules={[{ required: true, message: '상위메뉴ID는 필수입니다.' }]}>
           <Input />
         </Form.Item>
 
-        <Form.Item label="cssClass" name="cssClass">
+        <Form.Item name="menuNm" label="메뉴명" rules={[{ required: true }]}>
           <Input />
         </Form.Item>
 
-        <Form.Item label="actionId" name="actionId">
+        <Form.Item name="menuDispNm" label="메뉴표시명">
           <Input />
         </Form.Item>
 
-        <Form.Item label="사용여부" name="useYn">
+        <Form.Item name="menuLevel" label="메뉴레벨" rules={[{ required: true }]}>
+          <InputNumber min={1} style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Form.Item name="actId" label="액션ID">
+          <Input />
+        </Form.Item>
+
+        <Form.Item name="scriptNm" label="스크립트명">
+          <Input />
+        </Form.Item>
+
+        <Form.Item name="menuType" label="메뉴타입">
+          <Input />
+        </Form.Item>
+
+        <Form.Item name="useYn" label="사용여부" rules={[{ required: true }]}>
           <Radio.Group>
             <Radio value="Y">사용(Y)</Radio>
             <Radio value="N">미사용(N)</Radio>
           </Radio.Group>
         </Form.Item>
 
-        <Form.Item label="비고" name="remark">
-          <Input.TextArea rows={4} />
+        <Form.Item name="remark" label="비고">
+          <Input.TextArea rows={3} />
         </Form.Item>
+
+        <Space>
+          <Button type="primary" htmlType="submit">
+            저장
+          </Button>
+          <Button onClick={onCancel}>취소</Button>
+        </Space>
       </Form>
-    </Card>
-  );
-
-  // 1탭: 트리 + 폼
-  const Tab1 = (
-    <div style={{ display: 'flex', gap: 12, height: 'calc(100vh - 160px)' }}>
-      <Card size="small" title="메뉴목록" style={{ width: 360, height: '100%' }} styles={{ body: { height: 'calc(100% - 56px)', overflow: 'auto' } }}>
-        <Tree treeData={treeData} defaultExpandAll onSelect={onTreeSelect} selectedKeys={selected?.id ? [selected.id] : []} />
-      </Card>
-
-      <div style={{ flex: 1, minWidth: 520, height: '100%' }}>{RightForm}</div>
-    </div>
-  );
-
-  // ✅ 2탭: 왼쪽 "목록(List)" + 오른쪽 폼 (클릭하면 상세 표시)
-  const Tab2 = (
-    <div style={{ display: 'flex', gap: 12, height: 'calc(100vh - 160px)' }}>
-      <Card size="small" title="마이메뉴 목록" style={{ width: 360, height: '100%' }} styles={{ body: { height: 'calc(100% - 56px)', overflow: 'auto' } }}>
-        <List
-          size="small"
-          dataSource={[...mockMyMenuList].sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0))}
-          renderItem={(item) => {
-            const isActive = selected?.id === item.id;
-            return (
-              <List.Item
-                style={{
-                  cursor: 'pointer',
-                  padding: '8px 10px',
-                  borderRadius: 6,
-                  marginBottom: 4,
-                  background: isActive ? 'rgba(22,119,255,0.12)' : undefined,
-                  border: isActive ? '1px solid rgba(22,119,255,0.35)' : '1px solid transparent',
-                }}
-                onClick={() => selectItem(item)}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontWeight: 600 }}>{item.name}</span>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {item.path} · 사용:{item.useYn}
-                  </Text>
-                </div>
-              </List.Item>
-            );
-          }}
-        />
-      </Card>
-
-      <div style={{ flex: 1, minWidth: 520, height: '100%' }}>{RightForm}</div>
-    </div>
-  );
-
-  return (
-    <Card size="small" style={{ width: '100%' }}>
-      <Tabs
-        activeKey={activeKey}
-        onChange={(k) => {
-          setActiveKey(k as 'tab1' | 'tab2');
-          // 탭 이동 시 선택 유지/초기화는 정책에 따라 조절 가능
-        }}
-        items={[
-          { key: 'tab1', label: '메뉴관리', children: Tab1 },
-          { key: 'tab2', label: '마이메뉴관리', children: Tab2 },
-        ]}
-      />
     </Card>
   );
 }

@@ -80,3 +80,65 @@ a {
 .sider-topmenu-btn.ant-btn-text:not(:disabled):hover .anticon {
   color: rgba(0, 0, 0, 0.88) !important;
 }
+
+/* multi select 드롭다운을 체크박스 목록처럼 보이게 */
+.spp-select-multi-checkbox .ant-select-item-option {
+  padding-left: 40px; /* 체크박스 자리 */
+  position: relative;
+}
+
+/* 체크박스 박스 */
+.spp-select-multi-checkbox .ant-select-item-option::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  border: 1px solid rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+  background: #fff;
+}
+
+/* 선택된 경우 체크 표시 */
+.spp-select-multi-checkbox .ant-select-item-option-selected::after {
+  content: '';
+  position: absolute;
+  left: 18px;
+  top: 50%;
+  width: 8px;
+  height: 4px;
+  transform: translateY(-60%) rotate(-45deg);
+  border-left: 2px solid rgba(0, 0, 0, 0.75);
+  border-bottom: 2px solid rgba(0, 0, 0, 0.75);
+}
+
+/* selected 배경색/hover 하이라이트를 원하면 여기서 조절 */
+.spp-select-multi-checkbox .ant-select-item-option-selected {
+  background: transparent;
+}
+
+.spp-select-multi-checkbox .ant-select-item-option-active {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+/* 오른쪽 끝(기본) 체크 아이콘 제거 */
+.spp-select-multi-checkbox .ant-select-item-option-state {
+  display: none;
+}
+
+/* 옵션 텍스트도 같이 당겨주기 (체크박스 자리) */
+.spp-select-multi-checkbox .ant-select-item-option {
+  padding-left: 32px; /* 기존 40px -> 32px */
+}
+
+/* 체크박스 박스 위치 */
+.spp-select-multi-checkbox .ant-select-item-option::before {
+  left: 4px; /* 기존 14px -> 8px */
+}
+
+/* 체크 표시 위치 */
+.spp-select-multi-checkbox .ant-select-item-option-selected::after {
+  left: 8px; /* 기존 18px -> 12px */
+}
