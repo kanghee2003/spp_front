@@ -44,6 +44,11 @@ const GlobalAxiosProvider = (props: GlobalAxiosInterceptorProps) => {
         headers.set('X-XSRF-TOKEN', decodeURIComponent(xsrf));
       }
 
+      headers.set(
+        'Authorization',
+        'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0ZXN0VXNlciIsIm9yZ0NkIjoiRDAwMSIsInVzZXJObSI6Ilx1ZDE0Y1x1YzJhNFx1ZDJiOCIsInJvbGVzIjpbIlJPTEVfVVNFUiJdLCJpYXQiOjE3Njk0OTk0NzcsImV4cCI6MTc3MjA5MTQ3N30.xYaKuE7Y7th4Y0jFtdldKbaCc9rDijga5dCeOig0QqQ',
+      );
+
       config.headers = headers;
       return config;
     },
