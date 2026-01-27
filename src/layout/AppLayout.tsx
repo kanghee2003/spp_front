@@ -18,6 +18,16 @@ const SIDEBAR_WIDTH = 240;
 const SIDEBAR_COLLAPSED_WIDTH = 56;
 const ICON_AREA_WIDTH = SIDEBAR_COLLAPSED_WIDTH;
 
+// ===== 정렬용 상수 (여기만 미세조정하면 됨) =====
+const SIDER_TOP_PADDING = 8; // 메뉴 시작 상단 여백
+const MENU_ROW_HEIGHT = 40; // 1레벨 메뉴 버튼 높이
+const FOLD_BTN_HEIGHT = 24; // small 버튼 체감 높이(대충 24)
+const FOLD_BTN_RIGHT = 8;
+
+// 첫 번째 메뉴 라인(세로 중앙)에 접기 버튼을 맞춤
+const FOLD_BTN_TOP = SIDER_TOP_PADDING + (MENU_ROW_HEIGHT - FOLD_BTN_HEIGHT) / 2; // = 8 + 8 = 16
+// =================================================
+
 const buildMenuItems = (tree: MenuNode[]): NonNullable<MenuProps['items']> => {
   const toItem = (node: MenuNode): NonNullable<MenuProps['items']>[number] => {
     const icon = node.isLeaf ? <FileTextOutlined /> : <AppstoreOutlined />;
@@ -196,15 +206,35 @@ const AppLayout = () => {
             overflow: 'hidden',
           }}
         >
-          <div ref={siderRef} style={{ paddingTop: 8, height: '100%', position: 'relative' }}>
+          <div
+            ref={siderRef}
+            style={{
+              paddingTop: SIDER_TOP_PADDING,
+              height: '100%',
+              position: 'relative',
+            }}
+          >
+            {/* ✅ 접기 버튼: 레이아웃에서 빼고(absolute), Samples 첫 줄과 거의 동일선상 */}
             {!sidebarCollapsed && (
-              <div style={{ padding: '0 8px', display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
+              <div
+                style={{
+                  position: 'absolute',
+                  top: FOLD_BTN_TOP,
+                  right: FOLD_BTN_RIGHT,
+                  zIndex: 20,
+                }}
+              >
                 <Button
                   size="small"
                   icon={<MenuFoldOutlined />}
                   onClick={() => {
                     setSidebarCollapsed(true);
                     closeFloating();
+                  }}
+                  style={{
+                    height: FOLD_BTN_HEIGHT,
+                    width: 32,
+                    padding: 0,
                   }}
                 />
               </div>
@@ -237,9 +267,10 @@ const AppLayout = () => {
                     style={{
                       width: '100%',
                       padding: 0,
-                      height: 40,
+                      height: MENU_ROW_HEIGHT,
                       justifyContent: 'flex-start',
                       textAlign: 'left',
+                      paddingRight: 44, // ✅ 우측 접기 버튼 겹침 방지(라벨이 길 때)
                     }}
                   >
                     <span
