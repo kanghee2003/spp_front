@@ -19,6 +19,7 @@ export const menuTreeSpp: MenuNode[] = [
       { key: 'SAMPLE1', path: 'sample/Sample1', label: 'Sample1', isLeaf: true },
       { key: 'Compnent', path: 'sample/ComponentSample', label: 'Component', isLeaf: true },
       { key: 'Editor', path: 'sample/EditorSample', label: 'Editor', isLeaf: true },
+      { key: 'FileUpload', path: 'sample/FileUploadSample', label: 'FileUpload', isLeaf: true },
       { key: 'Menu', path: 'sample/MenuManagement', label: 'Menu', isLeaf: true },
       { key: 'SAMPLE3', path: 'sample/Sample3', label: 'Sample3', isLeaf: true },
       { key: 'SAMPLE4', path: 'sample/Sample4', label: 'Sample4', isLeaf: true },
