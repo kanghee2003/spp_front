@@ -28,6 +28,9 @@ const FOLD_BTN_RIGHT = 8;
 const FOLD_BTN_TOP = SIDER_TOP_PADDING + (MENU_ROW_HEIGHT - FOLD_BTN_HEIGHT) / 2; // = 8 + 8 = 16
 // =================================================
 
+// ✅ 플로팅 패널 타이틀 영역 높이
+const FLOATING_TITLE_HEIGHT = 44;
+
 const buildMenuItems = (tree: MenuNode[]): NonNullable<MenuProps['items']> => {
   const toItem = (node: MenuNode): NonNullable<MenuProps['items']>[number] => {
     const icon = node.isLeaf ? <FileTextOutlined /> : <AppstoreOutlined />;
@@ -166,6 +169,12 @@ const AppLayout = () => {
     return m;
   }, [menuTree]);
 
+  const floatingTitle = useMemo(() => {
+    if (!floatingRootKey) return '';
+    const root = topMenus.find((m) => m.key === floatingRootKey);
+    return root?.label ?? '';
+  }, [floatingRootKey, topMenus]);
+
   const onClick: MenuProps['onClick'] = (info) => {
     const key = String(info.key);
     const label = labelMap.get(key) || key;
@@ -215,7 +224,7 @@ const AppLayout = () => {
             }}
           >
             {/* ✅ 접기 버튼: 레이아웃에서 빼고(absolute), Samples 첫 줄과 거의 동일선상 */}
-            {!sidebarCollapsed && (
+            {!sidebarCollapsed && !floatingOpen && (
               <div
                 style={{
                   position: 'absolute',
@@ -316,17 +325,44 @@ const AppLayout = () => {
                   borderLeft: '1px solid rgba(0,0,0,0.08)',
                   boxShadow: '6px 0 20px rgba(0,0,0,0.12)',
                   zIndex: 10,
-                  overflow: 'auto',
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
                 }}
               >
-                <Menu
-                  mode="inline"
-                  items={floatingItems}
-                  onClick={onClick}
-                  openKeys={openKeys}
-                  onOpenChange={(keys) => setOpenKeys(keys as string[])}
-                  style={{ height: '100%' }}
-                />
+                <div
+                  style={{
+                    height: FLOATING_TITLE_HEIGHT,
+                    flexShrink: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    padding: '0 12px',
+                    borderBottom: '1px solid rgba(0,0,0,0.06)',
+                    background: '#fff',
+                  }}
+                >
+                  <Typography.Text
+                    style={{
+                      fontWeight: 600,
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap',
+                    }}
+                  >
+                    {floatingTitle}
+                  </Typography.Text>
+                </div>
+
+                <div style={{ flex: 1, overflow: 'auto' }}>
+                  <Menu
+                    mode="inline"
+                    items={floatingItems}
+                    onClick={onClick}
+                    openKeys={openKeys}
+                    onOpenChange={(keys) => setOpenKeys(keys as string[])}
+                    style={{ height: '100%' }}
+                  />
+                </div>
               </div>
             )}
           </div>
