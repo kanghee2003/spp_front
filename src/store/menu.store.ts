@@ -4,6 +4,7 @@ export type MenuNode = {
   key: string;
   path?: string;
   label: string;
+  type: 'D' | 'V' | 'T';
   /** leaf 메뉴 여부 (2/3/4레벨 어디든 leaf일 수 있음) */
   isLeaf?: boolean;
   children?: MenuNode[];

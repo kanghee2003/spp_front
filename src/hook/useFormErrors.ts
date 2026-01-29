@@ -52,7 +52,10 @@ export function collectFormErrorMessages(errors: AnyErrors): string[] {
 
 /**
  * react-hook-form의 errors(FieldErrors) 전체를 순회하면서
- * message를 발견하는 순서대로 alert를 순차적으로 띄운다.
+ * message를 발견하는 순서대로 alert를 띄운다.
+ *
+ * - 기본: 첫 번째 에러만 1개 띄운다. (사용자 UX 개선)
+ * - 가드: 같은 메시지가 연속으로 들어오면 중복 alert를 막는다.
  *
  * 사용 예)
  *   const alertErrors = useAlertFormErrors();

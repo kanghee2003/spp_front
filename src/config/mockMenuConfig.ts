@@ -10,6 +10,7 @@ export const menuTreeSpp: MenuNode[] = [
   {
     key: 'HOME',
     label: 'Home',
+    type: 'D',
     children: [{ key: DEFAULT_SCREEN_KEY, path: 'home/Dashboard', label: 'Dashboard', isLeaf: true }],
   },
   {
@@ -21,14 +22,7 @@ export const menuTreeSpp: MenuNode[] = [
       { key: 'Editor', path: 'sample/EditorSample', label: 'Editor', isLeaf: true },
       { key: 'FileUpload', path: 'sample/FileUploadSample', label: 'FileUpload', isLeaf: true },
       { key: 'Menu', path: 'sample/MenuManagement', label: 'Menu', isLeaf: true },
-      { key: 'SAMPLE3', path: 'sample/Sample3', label: 'Sample3', isLeaf: true },
-      { key: 'SAMPLE4', path: 'sample/Sample4', label: 'Sample4', isLeaf: true },
-      { key: 'SAMPLE5', path: 'sample/Sample5', label: 'Sample5', isLeaf: true },
-      { key: 'SAMPLE6', path: 'sample/Sample6', label: 'Sample6', isLeaf: true },
-      { key: 'SAMPLE7', path: 'sample/Sample7', label: 'Sample7', isLeaf: true },
-      { key: 'SAMPLE8', path: 'sample/Sample8', label: 'Sample8', isLeaf: true },
-      { key: 'SAMPLE9', path: 'sample/Sample9', label: 'Sample9', isLeaf: true },
-      { key: 'SAMPLE10', path: 'sample/Sample10', label: 'Sample10', isLeaf: true },
+      { key: 'TabControl', path: 'sample/TabControl', label: 'Menu', isLeaf: true },
     ],
   },
   {
