@@ -1,4 +1,5 @@
 import { useMemo, type ReactNode } from 'react';
+import { PageKeyProvider } from '@/layout/PageKeyContext';
 import { loadRoutes } from '@/router/AutoRoutes';
 import { useMdiStore } from '@/store/mdi.store';
 import { useMenuStore } from '@/store/menu.store';
@@ -19,9 +20,11 @@ const PageHost = () => {
   return (
     <>
       {tabs.map((t) => (
-        <div key={t.key} style={{ display: t.key === activeKey ? 'block' : 'none' }}>
-          {elementByKey[t.key] ?? <div style={{ padding: 16 }}>페이지를 찾을 수 없습니다: {t.key}</div>}
-        </div>
+        <PageKeyProvider key={t.key} value={t.key}>
+          <div style={{ display: t.key === activeKey ? 'block' : 'none' }}>
+            {elementByKey[t.key] ?? <div style={{ padding: 16 }}>페이지를 찾을 수 없습니다: {t.key}</div>}
+          </div>
+        </PageKeyProvider>
       ))}
     </>
   );

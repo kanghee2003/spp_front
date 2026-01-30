@@ -1,12 +1,16 @@
 import { create } from 'zustand';
 
+export enum MenuType {
+  FOLDER = 'F',
+  VIEW = 'V',
+  TAB = 'T',
+}
+
 export type MenuNode = {
   key: string;
   path?: string;
   label: string;
-  type: 'D' | 'V' | 'T';
-  /** leaf 메뉴 여부 (2/3/4레벨 어디든 leaf일 수 있음) */
-  isLeaf?: boolean;
+  type: MenuType;
   children?: MenuNode[];
 };
 

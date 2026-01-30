@@ -69,13 +69,13 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
     if (mode === AutoCompleteMode.ORG) {
       return items.map((x) => ({
         ...x,
-        value: `${x.orgCd} | ${x.orgCd}`,
+        value: `${x.orgCd} | ${x.orgNm}`,
         keyValue: x.orgCd,
         label: (
           <div style={rowStyle}>
             <span style={{ ...colStyle }}>{x.orgCd}</span>
             <span style={sepStyle}>|</span>
-            <span style={{ ...colStyle }}>{x.orgCd}</span>
+            <span style={{ ...colStyle }}>{x.orgNm}</span>
           </div>
         ),
       }));
@@ -166,7 +166,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
             return;
           }
 
-          setDisplayValue(`${hit.orgCd} | ${hit.orgCd}`);
+          setDisplayValue(`${hit.orgCd} | ${hit.orgNm}`);
         }
       } catch (e) {
         if (cancelled) return;
@@ -261,6 +261,14 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
 
         // 사용자가 입력 시작하면 초기 동기화 다시 허용(다음 value 변경 시)
         lastSyncedKeyRef.current = null;
+
+        // 입력을 전부 지우면 RHF 값도 초기화
+        if (q.trim().length === 0) {
+          setSearchValue('');
+          setOpen(false);
+          props.onChange?.(undefined as any);
+          return;
+        }
 
         // 사용자가 타이핑하는 값만 서버 검색어로 사용
         setSearchValue(q);

@@ -1,5 +1,5 @@
-const TabControl = () => {
-  return <></>;
+const TabControlTab1 = () => {
+  return <>1111111</>;
 };
 
-export default TabControl;
+export default TabControlTab1;

@@ -1,3 +1,4 @@
+export { v4 as generateUuidV4 } from 'uuid';
 export const toBool = (v?: string) => (v ?? '').toLowerCase() === 'true';
 export const normalize = (url?: string) => (url ? url.replace(/\/$/, '') : '');
 

@@ -9,7 +9,7 @@ import MDITabs from '@/layout/MdiTabs';
 import PageHost from '@/layout/PageHost';
 import SystemLinks from '@/layout/SystemLinks';
 import { useMdiStore } from '@/store/mdi.store';
-import { useMenuStore } from '@/store/menu.store';
+import { MenuType, useMenuStore } from '@/store/menu.store';
 import { Footer } from 'antd/es/layout/layout';
 
 const { Header, Sider, Content } = Layout;
@@ -28,15 +28,21 @@ const FOLD_BTN_RIGHT = 8;
 const FOLD_BTN_TOP = SIDER_TOP_PADDING + (MENU_ROW_HEIGHT - FOLD_BTN_HEIGHT) / 2; // = 8 + 8 = 16
 // =================================================
 
-// ✅ 플로팅 패널 타이틀 영역 높이
+//  플로팅 패널 타이틀 영역 높이
 const FLOATING_TITLE_HEIGHT = 44;
 
 const buildMenuItems = (tree: MenuNode[]): NonNullable<MenuProps['items']> => {
   const toItem = (node: MenuNode): NonNullable<MenuProps['items']>[number] => {
-    const icon = node.isLeaf ? <FileTextOutlined /> : <AppstoreOutlined />;
+    const icon = node.type === MenuType.VIEW ? <FileTextOutlined /> : <AppstoreOutlined />;
+
+    // TAB은 메뉴에서 렌더링하지 않음(권한/노출은 각 화면 내부에서 제어)
+    if (node.type === MenuType.TAB) {
+      // antd Menu item은 null을 받지 않아서, 상위에서 filter 처리한다.
+      return null as any;
+    }
 
     // leaf
-    if (node.isLeaf) {
+    if (node.type === MenuType.VIEW) {
       return {
         key: node.key,
         label: node.label,
@@ -49,11 +55,16 @@ const buildMenuItems = (tree: MenuNode[]): NonNullable<MenuProps['items']> => {
       key: node.key,
       label: node.label,
       icon,
-      children: (node.children ?? []).map((c: MenuNode) => toItem(c)),
+      children: (node.children ?? [])
+        .map((c: MenuNode) => toItem(c))
+        .filter(Boolean) as NonNullable<MenuProps['items']>,
     };
   };
 
-  return tree.filter((node) => node.key !== 'HOME').map((n: MenuNode) => toItem(n));
+  return tree
+    .filter((node) => node.key !== 'HOME')
+    .map((n: MenuNode) => toItem(n))
+    .filter(Boolean) as NonNullable<MenuProps['items']>;
 };
 
 const AppLayout = () => {
@@ -223,7 +234,7 @@ const AppLayout = () => {
               position: 'relative',
             }}
           >
-            {/* ✅ 접기 버튼: 레이아웃에서 빼고(absolute), Samples 첫 줄과 거의 동일선상 */}
+            {/*  접기 버튼: 레이아웃에서 빼고(absolute), Samples 첫 줄과 거의 동일선상 */}
             {!sidebarCollapsed && !floatingOpen && (
               <div
                 style={{
@@ -251,7 +262,7 @@ const AppLayout = () => {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {topMenus.map((m) => {
-                const iconNode = m.isLeaf ? <FileTextOutlined /> : <AppstoreOutlined />;
+                const iconNode = m.type === MenuType.VIEW ? <FileTextOutlined /> : <AppstoreOutlined />;
                 return (
                   <Button
                     key={m.key}
@@ -261,7 +272,7 @@ const AppLayout = () => {
                       // 접힌 상태에서는 아이콘 클릭 시 펼쳐지도록
                       if (sidebarCollapsed) setSidebarCollapsed(false);
 
-                      if (m.isLeaf) {
+                      if (m.type === MenuType.VIEW) {
                         openTab({ key: m.key, title: m.label });
                         closeFloating();
                         return;
@@ -279,7 +290,7 @@ const AppLayout = () => {
                       height: MENU_ROW_HEIGHT,
                       justifyContent: 'flex-start',
                       textAlign: 'left',
-                      paddingRight: 44, // ✅ 우측 접기 버튼 겹침 방지(라벨이 길 때)
+                      paddingRight: 44, //  우측 접기 버튼 겹침 방지(라벨이 길 때)
                     }}
                   >
                     <span

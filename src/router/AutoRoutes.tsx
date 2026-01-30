@@ -1,7 +1,7 @@
 import React from 'react';
 
 import { DEFAULT_SCREEN_KEY } from '@/config/mockMenuConfig';
-import type { MenuNode } from '@/store/menu.store';
+import { MenuType, type MenuNode } from '@/store/menu.store';
 import NotFoundPage from '@/error/NotFoundPage';
 
 export type AppRoute = {
@@ -24,18 +24,37 @@ function fileToSystemAndPagePath(file: string): { systemKey: string; pagePath: s
   return { systemKey: m[1], pagePath: m[2] };
 }
 
-function flattenLeaves(tree: MenuNode[]): MenuNode[] {
+function normalizePath(parentPath: string, nodePath?: string): string {
+  const p = (parentPath ?? '').replace(/^\/+|\/+$/g, '');
+  const c = (nodePath ?? '').replace(/^\/+|\/+$/g, '');
+
+  // nodePath가 이미 "a/b" 형태면 parent와 무관하게 그 값을 우선(기존/신규 스펙 모두 대응)
+  if (c.includes('/')) return c;
+  if (!p) return c;
+  if (!c) return p;
+  return `${p}/${c}`;
+}
+
+function flattenViewLeaves(tree: MenuNode[]): MenuNode[] {
   const out: MenuNode[] = [];
-  const walk = (nodes: MenuNode[]) => {
+  const walk = (nodes: MenuNode[], parentPath: string) => {
     for (const n of nodes) {
-      if (n.isLeaf) {
-        out.push(n);
-      } else if (n.children && n.children.length > 0) {
-        walk(n.children);
+      const fullPath = normalizePath(parentPath, n.path);
+
+      if (n.type === MenuType.VIEW) {
+        out.push({ ...n, path: fullPath });
+        // VIEW 아래의 children은 TAB 용도로 쓰는 케이스가 많아서,
+        // 라우팅 leaf 계산에서는 VIEW 아래 children은 내려가지 않는다.
+        continue;
+      }
+
+      if (n.children && n.children.length > 0) {
+        walk(n.children, fullPath);
       }
     }
   };
-  walk(tree);
+
+  walk(tree, '');
   return out;
 }
 
@@ -53,7 +72,7 @@ export function loadRoutes(systemKey: string, menuTree: MenuNode[]): AppRoute[] 
   const loaderByPath = loaderBySystemPath.get(systemKey) ?? new Map<string, () => Promise<PageModule>>();
 
   // 2) menuTree 기준으로만 라우트 구성
-  const leaves = flattenLeaves(menuTree);
+  const leaves = flattenViewLeaves(menuTree);
 
   const routes: AppRoute[] = leaves.map((leaf) => {
     const loader = leaf.path ? loaderByPath.get(leaf.path) : undefined;
