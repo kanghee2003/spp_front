@@ -1,6 +1,6 @@
 import { Card } from 'antd';
 
-import SppPageTabs from '@/layout/SppPageTabs';
+import SppPageTabs from '@/pages/spp/component/Tab/SppPageTabs';
 
 const TabControl = () => {
   return (

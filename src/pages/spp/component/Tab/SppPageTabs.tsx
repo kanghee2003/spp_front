@@ -10,11 +10,11 @@ import { usePageKey } from '@/layout/PageKeyContext';
 type PageModule = { default: React.ComponentType<any> };
 
 // src/pages 아래의 모든 TSX를 로딩할 수 있게 준비
-const pageModules = import.meta.glob('../pages/*/view/**/*.tsx') as Record<string, () => Promise<PageModule>>;
+const pageModules = import.meta.glob('/src/pages/*/view/**/*.tsx') as Record<string, () => Promise<PageModule>>;
 
 function fileToSystemAndPagePath(file: string): { systemKey: string; pagePath: string } | null {
-  // "../pages/spp/view/home/Dashboard.tsx" -> {systemKey:'spp', pagePath:'home/Dashboard'}
-  const m = file.match(/^\.\.\/pages\/([^/]+)\/view\/(.+)\.tsx$/);
+  // "/src/pages/spp/view/home/Dashboard.tsx" -> {systemKey:'spp', pagePath:'home/Dashboard'}
+  const m = file.match(/^(?:\.\.\/)?(?:\/src\/)?pages\/([^/]+)\/view\/(.+)\.tsx$/);
   if (!m) return null;
   return { systemKey: m[1], pagePath: m[2] };
 }
