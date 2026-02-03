@@ -7,6 +7,8 @@ import { Table } from 'antd';
 import type { TablePaginationConfig, TableProps } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 
+import { SppEllipsisTooltipCell, withEllipsisNoTitle } from './SppTableEllipsisTooltip';
+
 interface CustomTableProps<T extends object = any> extends TableProps<T> {
   rowNoFlag?: boolean;
   rowNoDescFlag?: boolean;
@@ -14,12 +16,7 @@ interface CustomTableProps<T extends object = any> extends TableProps<T> {
   selectedRowIndex?: number;
   rowSelectedFlag?: boolean;
   paginationResetKey?: any;
-  /**
-   * 서버 페이징 모드
-   * - dataSource는 '현재 페이지 데이터'만 전달
-   * - 내부에서 slice하지 않고 그대로 렌더
-   */
-  serverPaging?: boolean;
+  pagenationFlag?: boolean;
 }
 
 interface CustomPageParam {
@@ -87,6 +84,12 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
 
     return cols;
   }, [props.columns, props.rowNoFlag, props.rowNoDescFlag]);
+
+  // antd 기본 title 툴팁(브라우저 기본 툴팁)을 끄고, 셀 컴포넌트에서만 tooltip 처리
+  const ellipsisColumns = useMemo(() => {
+    if (!targetColumns) return targetColumns as any;
+    return withEllipsisNoTitle(targetColumns as any);
+  }, [targetColumns]);
   const [targetDataSource, setTargetDataSource] = useState<any>();
   const [paginationParam, setPaginationParam] = useState<CustomPageParam>({
     page: pagingEnabled && initialPagination?.current ? initialPagination.current : 1,
@@ -142,7 +145,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     const pageSize = paginationParam.pageSize;
     const start = pagingEnabled ? (page - 1) * pageSize : 0;
 
-    if (pagingEnabled && props.serverPaging !== true) {
+    if (pagingEnabled && props.pagenationFlag !== true) {
       const maxPage = Math.max(1, Math.ceil(source.length / pageSize));
       if (page > maxPage) {
         setPaginationParam({
@@ -154,7 +157,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       }
     }
 
-    const viewRows = pagingEnabled ? (props.serverPaging === true ? source : source.slice(start, start + pageSize)) : source;
+    const viewRows = pagingEnabled ? (props.pagenationFlag === true ? source : source.slice(start, start + pageSize)) : source;
 
     if (props.rowNoFlag === true && viewRows.length > 0) {
       const array = [
@@ -182,7 +185,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     }
   }, [
     props.dataSource,
-    props.serverPaging,
+    props.pagenationFlag,
     paginationParam.pageEditFlag,
     paginationParam.page,
     paginationParam.pageSize,
@@ -222,7 +225,16 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       <Table<T>
         ref={tableRef}
         {...props}
+        tableLayout={props.tableLayout ?? 'fixed'}
         scroll={props.scroll ?? { y: tableHeight }}
+        className={[props.className, 'spp-table-ellipsis'].filter(Boolean).join(' ')}
+        components={{
+          ...(props.components ?? {}),
+          body: {
+            ...(props.components as any)?.body,
+            cell: SppEllipsisTooltipCell,
+          },
+        }}
         onRow={(record, index) => ({
           ...props.onRow,
           onClick: async () => {
@@ -237,7 +249,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
             }
           },
         })}
-        columns={targetColumns}
+        columns={ellipsisColumns}
         dataSource={targetDataSource}
         pagination={computedPagination}
         onChange={(pagination, filters, sorter, extra) => {

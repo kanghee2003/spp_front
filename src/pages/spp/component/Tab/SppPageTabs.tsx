@@ -160,13 +160,7 @@ const SppPageTabs = ({ onChange }: SppPageTabsProps) => {
     );
   }
 
-  return (
-    <Tabs
-      activeKey={activeTabKey || undefined}
-      onChange={(k) => setActiveTabKey(k as string)}
-      items={items as any}
-    ></Tabs>
-  );
+  return <Tabs activeKey={activeTabKey || undefined} onChange={(k) => setActiveTabKey(k as string)} items={items as any}></Tabs>;
 };
 
 export default SppPageTabs;

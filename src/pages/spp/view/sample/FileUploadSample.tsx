@@ -8,6 +8,7 @@ import SppFileUploaderForm from '../../component/FileUploader/SppFileUploaderFor
 import { SampleFileApi } from '../../api/SampleFile.api';
 import { SampleFileUploadFormSchema, type SampleFileUploadFormValues, type SampleFileUploadResult } from '../../type/sample/SampleFileUpload.type';
 import { joinFiles } from '@/utils/common.util';
+import { downloadFile } from '@/utils/download.util';
 
 const { Title, Text } = Typography;
 
@@ -31,6 +32,10 @@ const FileUploadSample = () => {
   const mergedFiles = useMemo(() => joinFiles(files1, files2), [files1, files2]);
   const canSave = useMemo(() => (mergedFiles ?? []).length > 0, [mergedFiles]);
   const { uploadSampleFiles } = SampleFileApi();
+
+  const handleDownload = async (fileId: string, originalName: string) => {
+    await downloadFile(`/sample/file/download/${fileId}`, { filename: originalName });
+  };
 
   return (
     <Card>
@@ -150,8 +155,8 @@ const FileUploadSample = () => {
               <Text>fileCount: {uploaded.fileCount ?? 0}</Text>
               <Space vertical={true} style={{ width: '100%' }} size={2}>
                 {(uploaded.files ?? []).map((it, idx) => (
-                  <Text key={`${it.storedName ?? ''}-${idx}`}>
-                    - {it.originalName ?? ''} ({it.size ?? 0} bytes) → {it.storedName ?? ''}
+                  <Text key={`${it.storedName ?? ''}-${idx}`} onClick={() => handleDownload(it?.fileId ?? '', it.originalName ?? '')}>
+                    - <a href="#">{it.originalName ?? ''}</a> ({it.size ?? 0} bytes) → {it.storedName ?? ''}
                   </Text>
                 ))}
               </Space>

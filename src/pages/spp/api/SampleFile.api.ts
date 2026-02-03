@@ -1,15 +1,10 @@
 import { axiosService } from '@/config/common.axios';
 import type { ApiResponse } from '@/type/common.type';
-import {
-  SampleFileUploadResultScheme,
-  type SampleFileUploadResult,
-} from '@/pages/spp/type/sample/SampleFileUpload.type';
+import { SampleFileUploadResultScheme, type SampleFileUploadResult } from '@/pages/spp/type/sample/SampleFileUpload.type';
 
 export const SampleFileApi = () => {
-
   const uploadSampleFiles = async (files: File[], title: string, seq?: number | null) => {
     const form = new FormData();
-
 
     (files ?? []).forEach((f) => {
       form.append('files', f);
@@ -21,7 +16,7 @@ export const SampleFileApi = () => {
     }
 
     return axiosService().post<ApiResponse<SampleFileUploadResult>>(
-      '/api/sample/file/upload',
+      '/sample/file/upload',
       form,
       { headers: { 'Content-Type': 'multipart/form-data' } },
       SampleFileUploadResultScheme,

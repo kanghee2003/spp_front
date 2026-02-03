@@ -7,7 +7,7 @@ interface SppSelectFormProps extends SelectProps {
   control: Control<any>;
 }
 
-const SppSelectForm = ({ name, defaultValue, control, ...props }: SppSelectFormProps) => {
+const SppSelectForm = ({ name, control, ...props }: SppSelectFormProps) => {
   return (
     <Controller
       name={name}

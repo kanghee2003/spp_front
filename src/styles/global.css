@@ -142,3 +142,23 @@ a {
 .spp-select-multi-checkbox .ant-select-item-option-selected::after {
   left: 8px; /* 기존 18px -> 12px */
 }
+
+/* Table: cell ellipsis + tooltip (SppTable 기본 적용) */
+.spp-table-ellipsis .ant-table-cell {
+  /* cell이 자식의 최소폭 때문에 안 줄어드는 케이스 방지 */
+  max-width: 0;
+}
+
+.spp-table-ellipsis .ant-table-cell .spp-cell-wrap {
+  width: 100%;
+  min-width: 0;
+}
+
+.spp-table-ellipsis .ant-table-cell .spp-cell-ellipsis {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

@@ -98,6 +98,13 @@ const Sample1 = () => {
       },
     },
     {
+      title: '분류코드',
+      dataIndex: 'uuid',
+      key: 'uuid',
+      width: 100,
+      align: 'center',
+    },
+    {
       title: '분류명',
       dataIndex: 'cmGrpNm',
       key: 'cmGrpNm',
@@ -280,7 +287,7 @@ const Sample1 = () => {
           ref={tableRef}
           rowKey="uuid"
           rowNoFlag
-          serverPaging
+          pagenationFlag
           columns={columns}
           dataSource={saveFormFields}
           pagination={{ total: groupPage?.totalCount ?? 0 }}

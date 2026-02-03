@@ -7,18 +7,19 @@ import { z } from 'zod';
  */
 export const SampleFileUploadItemScheme = z
   .object({
-    originalName: z.string().nullable().optional(),
-    storedName: z.string().nullable().optional(),
-    size: z.number().nullable().optional(),
+    fileId: z.string().nullish(),
+    originalName: z.string().nullish(),
+    storedName: z.string().nullish(),
+    size: z.number().nullish(),
   })
   .strict();
 
 export const SampleFileUploadResultScheme = z
   .object({
-    title: z.string().nullable().optional(),
-    seq: z.number().int().nullable().optional(),
-    fileCount: z.number().int().nullable().optional(),
-    files: z.array(SampleFileUploadItemScheme).nullable().optional(),
+    title: z.string().nullish(),
+    seq: z.number().int().nullish(),
+    fileCount: z.number().int().nullish(),
+    files: z.array(SampleFileUploadItemScheme).nullish(),
   })
   .strict();
 

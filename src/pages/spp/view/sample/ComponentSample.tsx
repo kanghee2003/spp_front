@@ -20,6 +20,9 @@ import SppAutoCompleteForm from '../../component/AutoComplete/SppAutocompleteFor
 import { AutoCompleteMode } from '../../type/cm/AutoComplete.type';
 import { downloadFile } from '@/utils/download.util';
 
+import { isMatch } from '@/utils/regexp.util';
+import { REGEXP_RULES } from '@/type/common.regexp';
+
 type ComponentSampleFomeType = {
   select: string;
   multiselect: string;
@@ -32,6 +35,7 @@ type ComponentSampleFomeType = {
 const ComponentSample = () => {
   const openTab = useMdiStore((s) => s.openTab);
   const { alertMessage } = useMessage();
+  const [regExpValue, setRegExpValue] = useState<string>('');
   const [optionList, setOptionList] = useState<ComponentSampleOptions[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [isExcelOpen, setIsExcelOpen] = useState(false);
@@ -58,6 +62,14 @@ const ComponentSample = () => {
     await downloadFile('/api/sample/excel/two-sheets', { filename: '매출_본부별.xlsx' });
   };
 
+  const handleCheckRegExp = async () => {
+    if (!isMatch(REGEXP_RULES.ALLOW_EMAIL, regExpValue)) {
+      await alertMessage('입력 형식이 올바르지 않습니다.');
+    } else {
+      await alertMessage('검증 되었습니다.');
+    }
+  };
+
   useEffect(() => {
     setOptionList([
       { value: 'A', label: 'A', seq: 1 },
@@ -80,6 +92,31 @@ const ComponentSample = () => {
           <Col span={3}>Input Text Form</Col>
           <Col span={6}>
             <SppInputTextForm name="inputtext" control={sampleControl} />
+          </Col>
+        </Row>
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={3}>Input Text(정규식 영문만)</Col>
+          <Col span={6}>
+            <SppInputText validate={REGEXP_RULES.ALLOW_ENG} />
+          </Col>
+          <Col span={3}>Input Text(정규식 숫자만)</Col>
+          <Col span={6}>
+            <SppInputText
+              validate={{ regExp: REGEXP_RULES.ALLOW_NUMBER.regExp, message: '숫자만 입력가능해요~~' }}
+              onChange={(e) => console.log(e)}
+              // onBlur={(e) => console.log(e)}
+            />
+          </Col>
+        </Row>
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={3}>이메일</Col>
+          <Col span={6}>
+            <SppInputText value={regExpValue} />
+          </Col>
+          <Col span={6}>
+            <SppButton type="default" htmlType="button" onClick={(e) => handleCheckRegExp()}>
+              이메일 검증
+            </SppButton>
           </Col>
         </Row>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>

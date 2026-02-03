@@ -35,7 +35,6 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
   // 초기 keyValue 동기화 중복 방지
   const lastSyncedKeyRef = useRef<string | null>(null);
 
-  // Hook 규칙을 지키기 위해 둘 다 선언하고 enabled로 제어
   const userQuery = AutoCompleteService().getAutoCompleteUserList({
     query: searchValue,
     enabled: mode === AutoCompleteMode.USER,
