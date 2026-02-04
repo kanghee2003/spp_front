@@ -24,6 +24,7 @@ export const menuTreeSpp: MenuNode[] = [
       { key: 'Compnent', path: 'ComponentSample', label: 'Component', type: MenuType.VIEW },
       { key: 'Editor', path: 'EditorSample', label: 'Editor', type: MenuType.VIEW },
       { key: 'FileUpload', path: 'FileUploadSample', label: 'FileUpload', type: MenuType.VIEW },
+      { key: 'ExcelPasteUpload', path: 'ExcelPasteUploadSample', label: 'ExcelPasteUpload', type: MenuType.VIEW },
       { key: 'Menu', path: 'MenuManagement', label: 'Menu', type: MenuType.VIEW },
       {
         key: 'TabControl',
