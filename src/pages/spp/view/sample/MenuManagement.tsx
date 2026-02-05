@@ -1,238 +1,141 @@
-import React, { useMemo, useState } from 'react';
-import { Tabs, Tree, Form, Input, Radio, Button, Space, Card, Divider, Typography, message, List } from 'antd';
-import type { DataNode } from 'antd/es/tree';
+import { Layout, Card, Typography, Input, Button, Radio, Tree, Table, Space } from 'antd';
+import { LeftOutlined } from '@ant-design/icons';
 
-const { Text } = Typography;
+const { Sider, Content } = Layout;
+const { Title } = Typography;
 
-type MenuItem = {
-  id: string;
-  parentId?: string | null;
-  name: string;
-  path?: string;
-  cssClass?: string;
-  actionId?: string;
-  useYn: 'Y' | 'N';
-  sortNo?: number;
-  remark?: string;
-  type: 'MENU' | 'MYMENU';
-};
+const LEFT_W = 280;
+const RIGHT_W = 360;
+const MID_W = 64;
 
-// ---- mock 데이터 ----
-const mockMenus: MenuItem[] = [
-  { id: 'M1', parentId: null, name: '통합결재목록', path: '/appr/list', useYn: 'Y', type: 'MENU', sortNo: 1 },
-  { id: 'M1-1', parentId: 'M1', name: '결재함', path: '/appr/box', useYn: 'Y', type: 'MENU', sortNo: 1 },
-  { id: 'M1-2', parentId: 'M1', name: '기안함', path: '/appr/draft', useYn: 'Y', type: 'MENU', sortNo: 2 },
-  { id: 'M2', parentId: null, name: '정보보호', path: '/sec', useYn: 'Y', type: 'MENU', sortNo: 2 },
-  { id: 'M2-1', parentId: 'M2', name: '점검', path: '/sec/audit', useYn: 'N', type: 'MENU', sortNo: 1 },
-];
-
-const mockMyMenuList: MenuItem[] = [
-  { id: 'MY1', parentId: null, name: '정보보안', path: '/sec/info', useYn: 'Y', type: 'MYMENU', sortNo: 1 },
-  { id: 'MY2', parentId: null, name: '문서반출 시스템', path: '/sec/docout', useYn: 'Y', type: 'MYMENU', sortNo: 2 },
-  { id: 'MY3', parentId: null, name: '개인정보 관리시스템', path: '/sec/privacy', useYn: 'Y', type: 'MYMENU', sortNo: 3 },
-  { id: 'MY4', parentId: null, name: '영상정보기기 관리시스템', path: '/sec/cctv', useYn: 'N', type: 'MYMENU', sortNo: 4 },
-];
-
-// ---- 유틸: 평면 리스트 -> Tree Data ----
-function buildTree(nodes: MenuItem[]): DataNode[] {
-  const byParent = new Map<string | null, MenuItem[]>();
-  for (const n of nodes) {
-    const key = n.parentId ?? null;
-    if (!byParent.has(key)) byParent.set(key, []);
-    byParent.get(key)!.push(n);
-  }
-
-  const make = (parentId: string | null): DataNode[] => {
-    const children = (byParent.get(parentId) ?? []).sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0));
-    return children.map((c) => ({
-      key: c.id,
-      title: c.name,
-      children: make(c.id),
-    }));
-  };
-
-  return make(null);
-}
-
-export default function MenuManagePage() {
-  const [activeKey, setActiveKey] = useState<'tab1' | 'tab2'>('tab1');
-
-  const treeData = useMemo(() => buildTree(mockMenus), []);
-  const [selected, setSelected] = useState<MenuItem | null>(null);
-  const formEnabled = !!selected;
-
-  const [form] = Form.useForm<MenuItem>();
-
-  const selectItem = (item: MenuItem) => {
-    setSelected(item);
-    form.setFieldsValue(item);
-  };
-
-  const onTreeSelect = (keys: React.Key[]) => {
-    const id = String(keys?.[0] ?? '');
-    if (!id) return;
-
-    const found = mockMenus.find((m) => m.id === id);
-    if (!found) return;
-
-    selectItem(found);
-  };
-
-  const onNew = () => {
-    const empty: MenuItem = {
-      id: '',
-      parentId: null,
-      name: '',
-      path: '',
-      cssClass: '',
-      actionId: '',
-      useYn: 'Y',
-      sortNo: 1,
-      remark: '',
-      type: activeKey === 'tab1' ? 'MENU' : 'MYMENU',
-    };
-    setSelected(empty);
-    form.setFieldsValue(empty);
-  };
-
-  const onSave = async () => {
-    try {
-      const values = await form.validateFields();
-      message.success(`저장(샘플): ${values.name}`);
-      setSelected(values);
-    } catch {
-      // validation error
-    }
-  };
-
-  const onDelete = () => {
-    if (!selected?.id) return message.info('새 항목은 삭제할 수 없어요.');
-    message.success(`삭제(샘플): ${selected.name}`);
-    setSelected(null);
-    form.resetFields();
-  };
-
-  const RightForm = (
-    <Card
-      size="small"
-      title="메뉴 정보"
-      extra={
-        <Space>
-          <Button onClick={onNew}>신규</Button>
-          <Button type="primary" onClick={onSave} disabled={!formEnabled}>
-            저장
-          </Button>
-          <Button danger onClick={onDelete} disabled={!formEnabled}>
-            삭제
-          </Button>
-        </Space>
-      }
-      style={{ height: '100%' }}
-      styles={{ body: { height: 'calc(100% - 56px)', overflow: 'auto' } }}
-    >
-      {!formEnabled && (
-        <>
-          <Text type="secondary">왼쪽에서 항목을 선택하면 오른쪽 상세 정보가 표시돼요.</Text>
-          <Divider />
-        </>
-      )}
-
-      <Form form={form} layout="horizontal" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }} disabled={!formEnabled}>
-        <Form.Item label="ID" name="id">
-          <Input placeholder="(신규는 비워둠)" />
-        </Form.Item>
-
-        <Form.Item label="메뉴명" name="name" rules={[{ required: true, message: '메뉴명을 입력하세요.' }]}>
-          <Input />
-        </Form.Item>
-
-        <Form.Item label="URL" name="path">
-          <Input />
-        </Form.Item>
-
-        <Form.Item label="cssClass" name="cssClass">
-          <Input />
-        </Form.Item>
-
-        <Form.Item label="actionId" name="actionId">
-          <Input />
-        </Form.Item>
-
-        <Form.Item label="사용여부" name="useYn">
-          <Radio.Group>
-            <Radio value="Y">사용(Y)</Radio>
-            <Radio value="N">미사용(N)</Radio>
-          </Radio.Group>
-        </Form.Item>
-
-        <Form.Item label="비고" name="remark">
-          <Input.TextArea rows={4} />
-        </Form.Item>
-      </Form>
-    </Card>
-  );
-
-  // 1탭: 트리 + 폼
-  const Tab1 = (
-    <div style={{ display: 'flex', gap: 12, height: 'calc(100vh - 160px)' }}>
-      <Card size="small" title="메뉴목록" style={{ width: 360, height: '100%' }} styles={{ body: { height: 'calc(100% - 56px)', overflow: 'auto' } }}>
-        <Tree treeData={treeData} defaultExpandAll onSelect={onTreeSelect} selectedKeys={selected?.id ? [selected.id] : []} />
-      </Card>
-
-      <div style={{ flex: 1, minWidth: 520, height: '100%' }}>{RightForm}</div>
-    </div>
-  );
-
-  //  2탭: 왼쪽 "목록(List)" + 오른쪽 폼 (클릭하면 상세 표시)
-  const Tab2 = (
-    <div style={{ display: 'flex', gap: 12, height: 'calc(100vh - 160px)' }}>
-      <Card size="small" title="마이메뉴 목록" style={{ width: 360, height: '100%' }} styles={{ body: { height: 'calc(100% - 56px)', overflow: 'auto' } }}>
-        <List
-          size="small"
-          dataSource={[...mockMyMenuList].sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0))}
-          renderItem={(item) => {
-            const isActive = selected?.id === item.id;
-            return (
-              <List.Item
-                style={{
-                  cursor: 'pointer',
-                  padding: '8px 10px',
-                  borderRadius: 6,
-                  marginBottom: 4,
-                  background: isActive ? 'rgba(22,119,255,0.12)' : undefined,
-                  border: isActive ? '1px solid rgba(22,119,255,0.35)' : '1px solid transparent',
-                }}
-                onClick={() => selectItem(item)}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontWeight: 600 }}>{item.name}</span>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {item.path} · 사용:{item.useYn}
-                  </Text>
-                </div>
-              </List.Item>
-            );
-          }}
-        />
-      </Card>
-
-      <div style={{ flex: 1, minWidth: 520, height: '100%' }}>{RightForm}</div>
-    </div>
-  );
-
+export default function PermissionLayoutNoCss() {
   return (
-    <Card size="small" style={{ width: '100%' }}>
-      <Tabs
-        activeKey={activeKey}
-        onChange={(k) => {
-          setActiveKey(k as 'tab1' | 'tab2');
-          // 탭 이동 시 선택 유지/초기화는 정책에 따라 조절 가능
-        }}
-        items={[
-          { key: 'tab1', label: '메뉴관리', children: Tab1 },
-          { key: 'tab2', label: '마이메뉴관리', children: Tab2 },
-        ]}
-      />
-    </Card>
+    <Layout style={{ height: '100%', background: '#f5f6f8' }}>
+      {/* 왼쪽 */}
+      <Sider width={LEFT_W} theme="light" style={{ background: 'transparent', padding: 16 }}>
+        <Card
+          bordered
+          styles={{
+            header: { background: '#fafbfc', borderBottom: '1px solid #eef0f4' },
+            body: { padding: 12, height: 'calc(100vh - 32px - 56px)', display: 'flex', flexDirection: 'column', gap: 8 },
+          }}
+          title={
+            <Title level={5} style={{ margin: 0 }}>
+              권한 목록
+            </Title>
+          }
+        >
+          <Input.Search placeholder="검색" />
+          <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+            {/* 리스트/트리 */}
+            <div style={{ paddingTop: 8 }}>
+              기본권한
+              <br />
+              정보보호담당자권한
+            </div>
+          </div>
+        </Card>
+      </Sider>
+
+      {/* 가운데 */}
+      <Content style={{ padding: 16 }}>
+        <div
+          style={{
+            height: '100%',
+            display: 'grid',
+            gridTemplateColumns: `1fr ${MID_W}px ${RIGHT_W}px`,
+            gap: 16, // ✅ 영역 구분 핵심
+            alignItems: 'stretch',
+          }}
+        >
+          {/* 설정목록(테이블) */}
+          <Card
+            bordered
+            styles={{
+              header: { background: '#fafbfc', borderBottom: '1px solid #eef0f4' },
+              body: { padding: 12, height: 'calc(100vh - 32px - 56px)', display: 'flex', flexDirection: 'column' },
+            }}
+            title={
+              <Title level={5} style={{ margin: 0 }}>
+                설정목록
+              </Title>
+            }
+            extra={<Button type="primary">전체삭제</Button>}
+          >
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
+              <Table
+                size="small"
+                bordered
+                pagination={false}
+                columns={[
+                  { title: '설정유형', dataIndex: 'type', width: 140 },
+                  { title: '설정목록', dataIndex: 'value' },
+                  { title: '삭제', width: 90, render: () => <Button size="small">삭제</Button> },
+                ]}
+                dataSource={[{ key: '1', type: '부서단위', value: '안전관리부' }]}
+              />
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'center', gap: 8, paddingTop: 12 }}>
+              <Button>초기화</Button>
+              <Button type="primary">저장</Button>
+            </div>
+          </Card>
+
+          {/* 이동 버튼 컬럼 */}
+          <Card
+            bordered
+            styles={{
+              body: {
+                padding: 0,
+                height: 'calc(100vh - 32px - 56px)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: '#fafbfc',
+              },
+            }}
+          >
+            <Space direction="vertical">
+              <Button type="primary" icon={<LeftOutlined />} />
+            </Space>
+          </Card>
+
+          {/* 오른쪽(라디오+트리) */}
+          <Card
+            bordered
+            styles={{
+              header: { background: '#fafbfc', borderBottom: '1px solid #eef0f4' },
+              body: { padding: 12, height: 'calc(100vh - 32px - 56px)', display: 'flex', flexDirection: 'column', gap: 8 },
+            }}
+            title={
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <Title level={5} style={{ margin: 0 }}>
+                  설정유형
+                </Title>
+                <Radio.Group
+                  defaultValue="user"
+                  options={[
+                    { label: '사용자', value: 'user' },
+                    { label: '사용자그룹', value: 'group' },
+                    { label: '부서', value: 'dept' },
+                  ]}
+                />
+              </div>
+            }
+          >
+            <Input.Search placeholder="검색" />
+            <div style={{ flex: 1, minHeight: 0, overflow: 'auto', border: '1px solid #eef0f4', borderRadius: 8, padding: 8, background: '#fff' }}>
+              <Tree
+                treeData={[
+                  { title: 'AI개발부', key: 'a' },
+                  { title: 'HR부', key: 'b' },
+                ]}
+              />
+            </div>
+          </Card>
+        </div>
+      </Content>
+    </Layout>
   );
 }

@@ -1,4 +1,4 @@
-import { Input, InputProps, message } from 'antd';
+import { Input, type InputProps, message } from 'antd';
 import type { ClipboardEventHandler, FocusEventHandler, FormEventHandler, KeyboardEvent, KeyboardEventHandler } from 'react';
 import { useRef } from 'react';
 
@@ -26,7 +26,6 @@ function isNavKey(e: KeyboardEvent<HTMLInputElement>) {
   if (e.ctrlKey || e.metaKey || e.altKey) return true;
 
   const k = e.key;
-
   if (k === 'Shift' || k === 'Control' || k === 'Alt' || k === 'Meta' || k === 'CapsLock') return true;
 
   return k === 'Backspace' || k === 'Delete' || k === 'Tab' || k === 'Enter' || k === 'Escape' || k.startsWith('Arrow') || k === 'Home' || k === 'End';
@@ -36,6 +35,7 @@ const SppInputText = (props: SppInputTextProps) => {
   const { validate } = props;
 
   const warnLockRef = useRef(false);
+  const lastValidValueRef = useRef<string>(String((props.value ?? props.defaultValue ?? '') as any));
 
   const allowedRegExp = validate?.regExp ? normalizeRegExp(validate.regExp) : null;
   const oppositeRegExp = allowedRegExp ? makeOppositeRegExp(allowedRegExp) : null;
@@ -52,12 +52,15 @@ const SppInputText = (props: SppInputTextProps) => {
     }, validate.delayMs ?? 800);
   };
 
-  const sanitizeValue = (v: string) => {
-    if (!allowedRegExp) return v;
-    if (allowedRegExp.test(v)) return v;
+  const isValidValue = (v: string) => {
+    if (!allowedRegExp) return true;
+    if (allowedRegExp.test(v)) return true;
 
-    if (oppositeRegExp) return v.replace(oppositeRegExp, '');
-    return '';
+    if (oppositeRegExp) {
+      return !oppositeRegExp.test(v);
+    }
+
+    return false;
   };
 
   const prevent = (e: any) => {
@@ -66,9 +69,16 @@ const SppInputText = (props: SppInputTextProps) => {
     warn();
   };
 
-  const emitSanitizedChange = (el: HTMLInputElement, nextValue: string) => {
+  const emitChange = (el: HTMLInputElement, nextValue: string) => {
     el.value = nextValue;
     props.onChange?.({ target: el, currentTarget: el } as any);
+  };
+
+  const rollbackToLastValid = (el: HTMLInputElement) => {
+    const last = lastValidValueRef.current ?? '';
+    if ((el.value ?? '') === last) return;
+    warn();
+    emitChange(el, last);
   };
 
   const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (e) => {
@@ -82,8 +92,9 @@ const SppInputText = (props: SppInputTextProps) => {
       return;
     }
 
-    if (e.key.length === 1 && !allowedRegExp.test(e.key)) {
-      prevent(e);
+    if (e.key.length === 1) {
+      const ok = oppositeRegExp ? !oppositeRegExp.test(e.key) : allowedRegExp.test(e.key);
+      if (!ok) prevent(e);
     }
   };
 
@@ -94,10 +105,10 @@ const SppInputText = (props: SppInputTextProps) => {
 
     const ne = (e as any).nativeEvent as InputEvent | undefined;
     const data = (ne as any)?.data as string | null | undefined;
-
     if (!data) return;
 
-    if (!allowedRegExp.test(data)) prevent(e);
+    const ok = oppositeRegExp ? !oppositeRegExp.test(data) : allowedRegExp.test(data);
+    if (!ok) prevent(e);
   };
 
   const handlePaste: ClipboardEventHandler<HTMLInputElement> = (e) => {
@@ -107,8 +118,8 @@ const SppInputText = (props: SppInputTextProps) => {
 
     const text = e.clipboardData.getData('text') ?? '';
     if (!text) return;
-
-    if (!allowedRegExp.test(text)) prevent(e);
+    const ok = oppositeRegExp ? !oppositeRegExp.test(text) : allowedRegExp.test(text);
+    if (!ok) prevent(e);
   };
 
   const handleInput: FormEventHandler<HTMLInputElement> = (e) => {
@@ -118,12 +129,12 @@ const SppInputText = (props: SppInputTextProps) => {
 
     const el = e.currentTarget as HTMLInputElement;
     const raw = el.value ?? '';
-    const next = sanitizeValue(raw);
 
-    if (raw !== next) {
-      warn();
-      emitSanitizedChange(el, next);
+    if (isValidValue(raw)) {
+      lastValidValueRef.current = raw;
+      return;
     }
+    rollbackToLastValid(el);
   };
 
   const handleBlur: FocusEventHandler<HTMLInputElement> = (e) => {
@@ -133,11 +144,11 @@ const SppInputText = (props: SppInputTextProps) => {
 
     const el = e.currentTarget as HTMLInputElement;
     const raw = el.value ?? '';
-    const next = sanitizeValue(raw);
 
-    if (raw !== next) {
-      warn();
-      emitSanitizedChange(el, next);
+    if (!isValidValue(raw)) {
+      rollbackToLastValid(el);
+    } else {
+      lastValidValueRef.current = raw;
     }
   };
 

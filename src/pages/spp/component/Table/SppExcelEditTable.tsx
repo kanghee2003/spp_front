@@ -226,15 +226,44 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
 
   const [rowsState, setRowsState] = useState<T[]>(() => value as T[]);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
+  const [structVersion, setStructVersion] = useState(0);
 
   useEffect(() => {
     setRowsState(normalizeRowsWithStableKeys(value as T[], keysRef));
   }, [value]);
 
-  const commit = (next: T[]) => {
+  /* =========================
+   * Commit 분리
+   * ========================= */
+  const debounceTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        window.clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
+  }, []);
+
+  const commitStructural = (next: T[]) => {
     const normalized = normalizeRowsWithStableKeys(next, keysRef);
     setRowsState(normalized);
     onChange(normalized);
+
+    setStructVersion((v) => v + 1);
+  };
+
+  const commitTyping = (next: T[]) => {
+    setRowsState(next);
+
+    if (debounceTimerRef.current) window.clearTimeout(debounceTimerRef.current);
+
+    debounceTimerRef.current = window.setTimeout(() => {
+      const normalized = normalizeRowsWithStableKeys(next, keysRef);
+      onChange(normalized);
+      debounceTimerRef.current = null;
+    }, 200);
   };
 
   const visibleCols = useMemo(() => columns.filter((c) => c.visible !== false), [columns]);
@@ -244,6 +273,7 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
 
   const rowSelection = {
     selectedRowKeys,
+    columnWidth: 48,
     onChange: (keys: React.Key[]) => setSelectedRowKeys(keys),
     getCheckboxProps: (record: T) => ({
       disabled: !!frozenFirstRowFlag && firstRowKey != null && String((record as any)[INTERNAL_ROW_KEY]) === firstRowKey,
@@ -274,17 +304,20 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
       const v = String((record as any)[key] ?? '');
       const multiline = v.includes('\n');
 
+      const cellKey = `${String((record as any)[INTERNAL_ROW_KEY])}_${String(key)}_${structVersion}`;
+
       const setAt = (nv: string) => {
         const next = rowsState.slice();
         next[rowIndex] = { ...next[rowIndex], [key]: nv } as T;
-        commit(next);
+        commitTyping(next);
       };
 
       return multiline ? (
         <Input.TextArea
-          value={v}
+          key={cellKey}
+          defaultValue={v}
           placeholder={c.placeholder}
-          autoSize={{ minRows: 1, maxRows: 6 }}
+          rows={2} // ✅ Virtual 호환: 고정 높이
           onFocus={() => {
             anchorRef.current = { row: rowIndex, col: colIndex };
           }}
@@ -292,7 +325,8 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
         />
       ) : (
         <Input
-          value={v}
+          key={cellKey}
+          defaultValue={v}
           placeholder={c.placeholder}
           onFocus={() => {
             anchorRef.current = { row: rowIndex, col: colIndex };
@@ -336,14 +370,13 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
       createRow: () => generateKey(createRow()),
     });
 
-    commit(nextRows);
+    commitStructural(nextRows);
   };
 
   const deleteBtnDisabled = frozenFirstRowFlag ? rowsState.length <= 1 : false;
 
   return (
     <div ref={rootRef} onPaste={onPaste} style={{ width: '100%' }}>
-      {/* 상단 액션 영역: 왼쪽(선택건수) / 오른쪽(버튼) */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: 8 }}>
         <Text type="secondary">선택 {selectedCount}건</Text>
 
@@ -351,7 +384,7 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
           <Button
             size="small"
             onClick={() => {
-              commit([...rowsState, generateKey(createRow())]);
+              commitStructural([...rowsState, generateKey(createRow())]);
             }}
           >
             행 추가
@@ -381,7 +414,7 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
                 return !deletable.has(k);
               });
 
-              commit(next); // 0행 허용
+              commitStructural(next);
               setSelectedRowKeys([]);
             }}
           >
@@ -390,21 +423,19 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
         </div>
       </div>
 
-      {rowsState.length <= 0 ? (
-        <div style={{ border: '1px solid #f0f0f0', borderRadius: 8, padding: 24 }}>
-          <Empty description="데이터가 없습니다. '행 추가'로 행을 만든 뒤 입력/붙여넣기 하세요." />
-        </div>
-      ) : (
-        <Table<T>
-          rowKey={INTERNAL_ROW_KEY as any}
-          rowSelection={rowSelection as any}
-          columns={tableColumns}
-          dataSource={rowsState}
-          pagination={false}
-          size="small"
-          scroll={{ x: true }}
-        />
-      )}
+      <Table<T>
+        rowKey={INTERNAL_ROW_KEY as any}
+        rowSelection={rowSelection as any}
+        columns={tableColumns}
+        dataSource={rowsState}
+        pagination={false}
+        size="small"
+        virtual
+        scroll={{ y: 520, x: true }}
+        locale={{
+          emptyText: <Empty description="데이터가 없습니다. '행 추가'로 행을 만든 뒤 입력/붙여넣기 하세요." />,
+        }}
+      />
     </div>
   );
 };
