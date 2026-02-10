@@ -26,10 +26,11 @@ export const menuTreeSpp: MenuNode[] = [
       { key: 'FileUpload', path: 'FileUploadSample', label: 'FileUpload', type: MenuType.VIEW },
       { key: 'ExcelPasteUpload', path: 'ExcelPasteUploadSample', label: 'ExcelPasteUpload', type: MenuType.VIEW },
       { key: 'Menu', path: 'MenuManagement', label: 'Menu', type: MenuType.VIEW },
+      { key: 'DynamicTable', path: 'DynamicTableSample', label: 'Dynamic Table', type: MenuType.VIEW },
       {
         key: 'TabControl',
         path: 'TabControl',
-        label: 'Menu',
+        label: 'TabControl',
         type: MenuType.VIEW,
         children: [
           { key: 'TabControlTab1', path: 'TabControlTab1', label: 'TabControlTab1', type: MenuType.TAB },

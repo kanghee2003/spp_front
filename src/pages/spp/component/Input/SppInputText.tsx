@@ -88,7 +88,6 @@ const SppInputText = (props: SppInputTextProps) => {
     if (isNavKey(e)) return;
 
     if (e.key === 'Process' || e.key === 'Unidentified') {
-      prevent(e);
       return;
     }
 
@@ -104,6 +103,10 @@ const SppInputText = (props: SppInputTextProps) => {
     if (!allowedRegExp || (e as any).defaultPrevented) return;
 
     const ne = (e as any).nativeEvent as InputEvent | undefined;
+    const inputType = (ne as any)?.inputType as string | undefined;
+
+    if (inputType?.startsWith('delete')) return;
+
     const data = (ne as any)?.data as string | null | undefined;
     if (!data) return;
 

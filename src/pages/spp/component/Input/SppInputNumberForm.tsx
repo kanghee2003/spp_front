@@ -1,7 +1,8 @@
-import { Control, Controller } from 'react-hook-form';
-import SppInputNumber, { SppInputNumberProps } from './SppInputNumber';
+import type { Control } from 'react-hook-form';
+import { Controller } from 'react-hook-form';
+import SppInputNumber, { type SppInputNumberProps } from './SppInputNumber';
 
-interface SppInputNumberFormProps extends SppInputNumberProps {
+export interface SppInputNumberFormProps extends SppInputNumberProps {
   name: string;
   control: Control<any>;
 }
@@ -12,17 +13,17 @@ const SppInputNumberForm = ({ name, control, ...props }: SppInputNumberFormProps
       name={name}
       control={control}
       defaultValue={props.defaultValue}
-      render={({ field, fieldState }) => (
+      render={({ field }) => (
         <SppInputNumber
           {...props}
-          value={field.value ?? ''}
+          value={(field.value ?? null) as any}
           onChange={(v) => {
             field.onChange(v);
             props.onChange?.(v);
           }}
-          onBlur={(v) => {
+          onBlur={(e) => {
             field.onBlur();
-            props.onBlur?.(v);
+            props.onBlur?.(e);
           }}
         />
       )}

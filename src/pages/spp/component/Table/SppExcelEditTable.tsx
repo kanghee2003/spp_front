@@ -31,6 +31,59 @@ function normalizeRowsWithStableKeys<T extends AnyRow>(value: T[], keysRef: Reac
   });
 }
 
+function normalizeMsExcelHyphenList(v: string): string {
+  if (!v) return v;
+
+  const s = String(v)
+    .replace(/\u00a0/g, ' ')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .split('\u000b')
+    .join('\n');
+
+  const hasDashBreak = /(?:^|\n)\s*-\s*(?:\n|$)/m.test(s);
+  const hasIndentedDash = /(?:^|\n)[ \t]{2,}-/m.test(s);
+  if (!hasDashBreak && !hasIndentedDash) return s;
+
+  const lines = s.split('\n');
+  const out: string[] = [];
+
+  const normalizeIndentDash = (line: string) => {
+    // 2칸 이상 공백/탭 혼합 + "-" 시작을 "- "로 통일
+    const m = line.match(/^([ \t]{2,})-\s*(.*)$/);
+    if (!m) return line;
+
+    const rest = m[2] ?? '';
+    if (!rest) return '-';
+    return `- ${rest.replace(/^\s+/, '')}`;
+  };
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i];
+
+    line = normalizeIndentDash(line);
+
+    if (/^\s*-\s*$/.test(line)) {
+      let j = i + 1;
+      while (j < lines.length && lines[j] === '') j += 1;
+
+      const next = j < lines.length ? lines[j] : '';
+      if (next !== '') {
+        out.push(`- ${next.replace(/^\s+/, '')}`);
+        i = j;
+        continue;
+      }
+
+      out.push('-');
+      continue;
+    }
+
+    out.push(line);
+  }
+
+  return out.join('\n');
+}
+
 /* =========================
  * Clipboard Parsers
  * ========================= */
@@ -69,12 +122,14 @@ function parseGridFromHtmlTable(html: string): string[][] {
         const tmp = doc.createElement('div');
         tmp.innerHTML = normalizedHtml;
 
-        return (tmp.textContent ?? '')
+        const text = (tmp.textContent ?? '')
           .replace(/\u00a0/g, ' ')
           .replace(/\r\n/g, '\n')
           .replace(/\r/g, '\n')
           .split('\u000b')
           .join('\n');
+
+        return normalizeMsExcelHyphenList(text);
       });
 
       rows.push(cells);
@@ -97,7 +152,7 @@ function parseTsvWithQuotesAndNewlines(text: string): string[][] {
   let inQuotes = false;
 
   const pushCell = () => {
-    row.push(cell);
+    row.push(normalizeMsExcelHyphenList(cell));
     cell = '';
   };
 
@@ -232,9 +287,6 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
     setRowsState(normalizeRowsWithStableKeys(value as T[], keysRef));
   }, [value]);
 
-  /* =========================
-   * Commit 분리
-   * ========================= */
   const debounceTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -250,7 +302,6 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
     const normalized = normalizeRowsWithStableKeys(next, keysRef);
     setRowsState(normalized);
     onChange(normalized);
-
     setStructVersion((v) => v + 1);
   };
 
@@ -317,7 +368,7 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
           key={cellKey}
           defaultValue={v}
           placeholder={c.placeholder}
-          rows={2} // ✅ Virtual 호환: 고정 높이
+          rows={2}
           onFocus={() => {
             anchorRef.current = { row: rowIndex, col: colIndex };
           }}

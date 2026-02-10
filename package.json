@@ -30,6 +30,7 @@
     "jodit": "4.7.9",
     "jodit-react": "5.2.38",
     "qs": "6.14.1",
+    "rc-virtual-list": "^3.19.2",
     "react": "19.2.3",
     "react-dom": "19.2.3",
     "react-hook-form": "7.70.0",

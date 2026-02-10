@@ -12,7 +12,7 @@ export const REGEXP = {
   NUMBER_POSITIVE_INT: /^[1-9][0-9]*$/,
 
   KOR_ONLY: /^[가-힣]*$/,
-  KOR_ENG_NUM_SPACE: /^[가-힣a-zA-Z0-9 ]*$/,
+  KOR_ENG_NUM_SPACE: /^[가-힣ㄱ-ㅎㅏ-ㅑa-zA-Z0-9 ]*$/,
 
   EMAIL_SIMPLE: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
   PHONE_KR_SIMPLE: /^01[016789][0-9]{7,8}$/,

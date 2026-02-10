@@ -67,11 +67,11 @@ const detailMockByMasterId: Record<string, DetailMock> = {
   },
 };
 
-function buildExtraColumns(metas: ExtraColumnMeta[]): ColumnsType<DetailRow> {
+function makeExtraColumns(metas: ExtraColumnMeta[]): ColumnsType<DetailRow> {
   return metas.map((m) => ({ key: m.key, title: m.title, dataIndex: m.dataIndex }));
 }
 
-export default function MasterDetailSimple() {
+const DynamicTableSample = () => {
   const [masterRows] = useState<MasterRow[]>([
     { id: 'S1', name: '설정 1', type: 'USER', owner: '관리자A', updatedAt: '2026-02-10' },
     { id: 'S2', name: '설정 2', type: 'ORG', owner: '관리자B', updatedAt: '2026-02-09' },
@@ -84,7 +84,7 @@ export default function MasterDetailSimple() {
 
   useEffect(() => {
     const mock = detailMockByMasterId[selectedId];
-    const merged = [...baseDetailColumns, ...buildExtraColumns(mock?.extraColumns ?? [])];
+    const merged = [...baseDetailColumns, ...makeExtraColumns(mock?.extraColumns ?? [])];
     setDetailColumns(merged);
     setDetailRows(mock?.rows ?? []);
   }, [selectedId]);
@@ -118,4 +118,6 @@ export default function MasterDetailSimple() {
       <Table<DetailRow> rowKey="id" size="small" columns={detailColumns} dataSource={detailRows} pagination={false} />
     </div>
   );
-}
+};
+
+export default DynamicTableSample;
