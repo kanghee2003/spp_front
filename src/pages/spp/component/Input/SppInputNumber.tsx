@@ -1,5 +1,6 @@
 import { InputNumber, type InputNumberProps } from 'antd';
-import type { ClipboardEventHandler, KeyboardEvent, KeyboardEventHandler } from 'react';
+import type { ClipboardEventHandler, CompositionEventHandler, KeyboardEvent, KeyboardEventHandler } from 'react';
+import { useRef } from 'react';
 
 export interface SppInputNumberProps extends Omit<InputNumberProps<string>, 'formatter' | 'parser'> {
   /** 소수점 허용 여부 */
@@ -11,7 +12,6 @@ export interface SppInputNumberProps extends Omit<InputNumberProps<string>, 'for
 }
 
 function addComma(s: string) {
-  // "1234567" -> "1,234,567"
   return s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
@@ -20,7 +20,6 @@ function stripNonDigits(s: string) {
 }
 
 function stripToDecimal(s: string) {
-  // 숫자/점만 남기고 점은 1개만 허용
   const cleaned = s.replace(/[^\d.]/g, '');
   const i = cleaned.indexOf('.');
   if (i < 0) return cleaned;
@@ -43,19 +42,35 @@ function isNavKey(e: KeyboardEvent<HTMLInputElement>) {
   return k === 'Backspace' || k === 'Delete' || k === 'ArrowLeft' || k === 'ArrowRight' || k === 'Tab' || k === 'Enter' || k === 'Home' || k === 'End';
 }
 
+function sanitizeValue(input: string, allowDecimal: boolean, decimalScale?: number) {
+  const raw = (input ?? '').replace(/,/g, '');
+
+  if (!allowDecimal) {
+    return stripNonDigits(raw);
+  }
+
+  const dec = stripToDecimal(raw);
+  return limitDecimalScale(dec, decimalScale);
+}
+
 const SppInputNumber = (props: SppInputNumberProps) => {
-  const { allowDecimal = false, useComma = true, controls = false, decimalScale, onKeyDown, onPaste, ...rest } = props;
+  const {
+    allowDecimal = false,
+    useComma = true,
+    controls = false,
+    decimalScale,
+    onKeyDown,
+    onPaste,
+    onChange,
+    onCompositionStart,
+    onCompositionUpdate,
+    onCompositionEnd,
+    ...rest
+  } = props;
 
-  const parser = (v?: string | null) => {
-    const raw = (v ?? '').replace(/,/g, '');
+  const composingRef = useRef(false);
 
-    if (!allowDecimal) {
-      return stripNonDigits(raw);
-    }
-
-    const dec = stripToDecimal(raw);
-    return limitDecimalScale(dec, decimalScale);
-  };
+  const parser = (v?: string | null) => sanitizeValue(v ?? '', allowDecimal, decimalScale);
 
   const formatter = (v?: string | number | null) => {
     const raw = v == null ? '' : String(v);
@@ -71,9 +86,7 @@ const SppInputNumber = (props: SppInputNumberProps) => {
     const dec = limitDecimalScale(stripToDecimal(normalized), decimalScale);
 
     const i = dec.indexOf('.');
-    if (i < 0) {
-      return useComma ? addComma(dec) : dec;
-    }
+    if (i < 0) return useComma ? addComma(dec) : dec;
 
     const intPart = dec.slice(0, i);
     const fracPart = dec.slice(i + 1);
@@ -82,19 +95,24 @@ const SppInputNumber = (props: SppInputNumberProps) => {
   };
 
   const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (e) => {
+    // IME 조합중이면 아예 막기 (한글/일본어 등)
+    if ((e as any).isComposing || composingRef.current) {
+      e.preventDefault();
+      onKeyDown?.(e);
+      return;
+    }
+
     if (isNavKey(e)) {
       onKeyDown?.(e);
       return;
     }
 
-    // 소수점 허용이면 '.' 1개만
     if (allowDecimal && e.key === '.') {
       if (e.currentTarget.value.includes('.')) e.preventDefault();
       onKeyDown?.(e);
       return;
     }
 
-    // 숫자만
     if (!/^\d$/.test(e.key)) e.preventDefault();
     onKeyDown?.(e);
   };
@@ -108,16 +126,51 @@ const SppInputNumber = (props: SppInputNumberProps) => {
       return;
     }
 
-    // 소수점은 1개만
     if (!/^\d+(\.\d+)?$/.test(text)) e.preventDefault();
     onPaste?.(e);
   };
 
-  // allowDecimal=false면 precision=0으로 고정 (소수 입력 자체 불가)
-  const precision = allowDecimal ? decimalScale : 0;
+  const handleChange = (v: string | null) => {
+    // InputNumber는 parser/formatter가 있어도, IME/모바일에서 이상 값이 한번 들어오는 경우가 있음.
+    const saniValue = sanitizeValue(v ?? '', allowDecimal, decimalScale);
+    onChange?.(saniValue);
+  };
+
+  const handleCompositionStart: CompositionEventHandler<HTMLInputElement> = (e) => {
+    // 조합 시작 = 한글 입력 시작 -> 차단
+    composingRef.current = true;
+    e.preventDefault();
+    onCompositionStart?.(e);
+  };
+
+  const handleCompositionUpdate: CompositionEventHandler<HTMLInputElement> = (e) => {
+    // 조합 업데이트도 차단
+    e.preventDefault();
+    onCompositionUpdate?.(e);
+  };
+
+  const handleCompositionEnd: CompositionEventHandler<HTMLInputElement> = (e) => {
+    // 조합 종료 후에도 값이 들어올 수 있으니, 즉시 조합 플래그 끄고 차단
+    composingRef.current = false;
+    e.preventDefault();
+    onCompositionEnd?.(e);
+  };
 
   return (
-    <InputNumber<string> {...rest} stringMode precision={precision} parser={parser} formatter={formatter} onKeyDown={handleKeyDown} onPaste={handlePaste} />
+    <InputNumber<string>
+      {...rest}
+      stringMode
+      controls={controls}
+      precision={allowDecimal ? decimalScale : 0}
+      parser={parser}
+      formatter={formatter}
+      onKeyDown={handleKeyDown}
+      onPaste={handlePaste}
+      onCompositionStart={handleCompositionStart}
+      onCompositionUpdate={handleCompositionUpdate}
+      onCompositionEnd={handleCompositionEnd}
+      onChange={handleChange}
+    />
   );
 };
 
