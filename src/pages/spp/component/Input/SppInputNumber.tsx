@@ -1,8 +1,8 @@
 import { InputNumber, type InputNumberProps } from 'antd';
-import type { ClipboardEventHandler, CompositionEventHandler, KeyboardEvent, KeyboardEventHandler } from 'react';
-import { useRef } from 'react';
+import type { ClipboardEventHandler, KeyboardEvent, KeyboardEventHandler } from 'react';
+import { useEffect, useRef } from 'react';
 
-export interface SppInputNumberProps extends Omit<InputNumberProps<string>, 'formatter' | 'parser'> {
+export interface SppInputNumberProps extends Omit<InputNumberProps<number>, 'formatter' | 'parser' | 'stringMode'> {
   /** 소수점 허용 여부 */
   allowDecimal?: boolean;
   /** 천단위 콤마 표시 여부 */
@@ -15,23 +15,24 @@ function addComma(s: string) {
   return s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-function stripNonDigits(s: string) {
-  return s.replace(/[^\d]/g, '');
-}
+function sanitizeText(raw: string, allowDecimal: boolean, decimalScale?: number) {
+  const noComma = (raw ?? '').replace(/,/g, '');
 
-function stripToDecimal(s: string) {
-  const cleaned = s.replace(/[^\d.]/g, '');
+  if (!allowDecimal) {
+    return noComma.replace(/[^\d]/g, '');
+  }
+
+  const cleaned = noComma.replace(/[^\d.]/g, '');
   const i = cleaned.indexOf('.');
-  if (i < 0) return cleaned;
-  return cleaned.slice(0, i + 1) + cleaned.slice(i + 1).replace(/\./g, '');
-}
+  const oneDot = i < 0 ? cleaned : cleaned.slice(0, i + 1) + cleaned.slice(i + 1).replace(/\./g, '');
 
-function limitDecimalScale(s: string, scale?: number) {
-  if (scale == null) return s;
-  const i = s.indexOf('.');
-  if (i < 0) return s;
-  const intPart = s.slice(0, i);
-  const fracPart = s.slice(i + 1).slice(0, Math.max(0, scale));
+  if (decimalScale == null) return oneDot;
+
+  const j = oneDot.indexOf('.');
+  if (j < 0) return oneDot;
+
+  const intPart = oneDot.slice(0, j);
+  const fracPart = oneDot.slice(j + 1).slice(0, Math.max(0, decimalScale));
   return `${intPart}.${fracPart}`;
 }
 
@@ -42,78 +43,49 @@ function isNavKey(e: KeyboardEvent<HTMLInputElement>) {
   return k === 'Backspace' || k === 'Delete' || k === 'ArrowLeft' || k === 'ArrowRight' || k === 'Tab' || k === 'Enter' || k === 'Home' || k === 'End';
 }
 
-function sanitizeValue(input: string, allowDecimal: boolean, decimalScale?: number) {
-  const raw = (input ?? '').replace(/,/g, '');
+function isAllowedInsertedText(text: string, allowDecimal: boolean) {
+  if (!text) return true;
+  if (!allowDecimal) return /^\d+$/.test(text);
 
-  if (!allowDecimal) {
-    return stripNonDigits(raw);
-  }
-
-  const dec = stripToDecimal(raw);
-  return limitDecimalScale(dec, decimalScale);
+  return text === '.' || /^\d+$/.test(text) || /^\d+(\.\d+)?$/.test(text);
 }
 
 const SppInputNumber = (props: SppInputNumberProps) => {
-  const {
-    allowDecimal = false,
-    useComma = true,
-    controls = false,
-    decimalScale,
-    onKeyDown,
-    onPaste,
-    onChange,
-    onCompositionStart,
-    onCompositionUpdate,
-    onCompositionEnd,
-    ...rest
-  } = props;
+  const { allowDecimal = false, useComma = true, decimalScale, controls = false, onKeyDown, onPaste, onChange, ...rest } = props;
 
-  const composingRef = useRef(false);
+  const inputNumberRef = useRef<any>(null);
 
-  const parser = (v?: string | null) => sanitizeValue(v ?? '', allowDecimal, decimalScale);
+  const parser = (v?: string) => {
+    const text = sanitizeText(v ?? '', allowDecimal, decimalScale);
+    return text ? Number(text) : Number.NaN;
+  };
 
-  const formatter = (v?: string | number | null) => {
-    const raw = v == null ? '' : String(v);
-    if (!raw) return '';
+  const formatter = (v?: number | string) => {
+    if (v == null) return '';
 
-    const normalized = raw.replace(/,/g, '');
+    const text = sanitizeText(String(v), allowDecimal, decimalScale);
+    if (!text) return '';
 
-    if (!allowDecimal) {
-      const digits = stripNonDigits(normalized);
-      return useComma ? addComma(digits) : digits;
-    }
+    if (!allowDecimal) return useComma ? addComma(text) : text;
 
-    const dec = limitDecimalScale(stripToDecimal(normalized), decimalScale);
+    const i = text.indexOf('.');
+    if (i < 0) return useComma ? addComma(text) : text;
 
-    const i = dec.indexOf('.');
-    if (i < 0) return useComma ? addComma(dec) : dec;
-
-    const intPart = dec.slice(0, i);
-    const fracPart = dec.slice(i + 1);
-    const intFmt = useComma ? addComma(intPart) : intPart;
-    return `${intFmt}.${fracPart}`;
+    const intFmt = useComma ? addComma(text.slice(0, i)) : text.slice(0, i);
+    return `${intFmt}.${text.slice(i + 1)}`;
   };
 
   const handleKeyDown: KeyboardEventHandler<HTMLInputElement> = (e) => {
-    // IME 조합중이면 아예 막기 (한글/일본어 등)
-    if ((e as any).isComposing || composingRef.current) {
-      e.preventDefault();
-      onKeyDown?.(e);
-      return;
-    }
-
+    // composing일 때 key가 Process 등으로 들어오는 케이스가 있어 여기서 막으면 숫자도 안 쳐질 수 있음.
+    // 실제 차단은 beforeinput(native)에서 한다.
     if (isNavKey(e)) {
       onKeyDown?.(e);
       return;
     }
 
-    if (allowDecimal && e.key === '.') {
-      if (e.currentTarget.value.includes('.')) e.preventDefault();
-      onKeyDown?.(e);
-      return;
-    }
+    if (!allowDecimal && e.key.length === 1 && !/^\d$/.test(e.key)) e.preventDefault();
+    if (allowDecimal && e.key.length === 1 && !/^\d$/.test(e.key) && e.key !== '.') e.preventDefault();
 
-    if (!/^\d$/.test(e.key)) e.preventDefault();
     onKeyDown?.(e);
   };
 
@@ -130,46 +102,67 @@ const SppInputNumber = (props: SppInputNumberProps) => {
     onPaste?.(e);
   };
 
-  const handleChange = (v: string | null) => {
-    // InputNumber는 parser/formatter가 있어도, IME/모바일에서 이상 값이 한번 들어오는 경우가 있음.
-    const saniValue = sanitizeValue(v ?? '', allowDecimal, decimalScale);
-    onChange?.(saniValue);
-  };
+  useEffect(() => {
+    const refObj = inputNumberRef.current;
 
-  const handleCompositionStart: CompositionEventHandler<HTMLInputElement> = (e) => {
-    // 조합 시작 = 한글 입력 시작 -> 차단
-    composingRef.current = true;
-    e.preventDefault();
-    onCompositionStart?.(e);
-  };
+    const root: HTMLElement | null = (refObj?.nativeElement as HTMLElement | undefined) ?? (refObj as HTMLElement | null) ?? null;
 
-  const handleCompositionUpdate: CompositionEventHandler<HTMLInputElement> = (e) => {
-    // 조합 업데이트도 차단
-    e.preventDefault();
-    onCompositionUpdate?.(e);
-  };
+    const input = (root?.querySelector('input') as HTMLInputElement | null) ?? (root?.querySelector('.ant-input-number-input') as HTMLInputElement | null);
 
-  const handleCompositionEnd: CompositionEventHandler<HTMLInputElement> = (e) => {
-    // 조합 종료 후에도 값이 들어올 수 있으니, 즉시 조합 플래그 끄고 차단
-    composingRef.current = false;
-    e.preventDefault();
-    onCompositionEnd?.(e);
-  };
+    if (!input) return;
+
+    const onBeforeInputNative = (ev: Event) => {
+      const e = ev as InputEvent;
+
+      // 삭제는 통과
+      if (typeof e.inputType === 'string' && e.inputType.startsWith('delete')) return;
+
+      const text = e.data ?? '';
+
+      // 한글/자음/기호 등 차단
+      if (text && !isAllowedInsertedText(text, allowDecimal)) {
+        e.preventDefault();
+        return;
+      }
+
+      // '.' 1개만
+      if (allowDecimal && text === '.' && input.value.includes('.')) {
+        e.preventDefault();
+      }
+    };
+
+    const onInputNative = () => {
+      const raw = input.value ?? '';
+      const safe = sanitizeText(raw, allowDecimal, decimalScale);
+      if (raw !== safe) input.value = safe;
+    };
+
+    input.addEventListener('beforeinput', onBeforeInputNative as any, true);
+    input.addEventListener('input', onInputNative, true);
+
+    return () => {
+      input.removeEventListener('beforeinput', onBeforeInputNative as any, true);
+      input.removeEventListener('input', onInputNative, true);
+    };
+  }, [allowDecimal, decimalScale]);
+
+  const precision = allowDecimal ? decimalScale : 0;
 
   return (
-    <InputNumber<string>
+    <InputNumber<number>
       {...rest}
-      stringMode
+      ref={inputNumberRef}
       controls={controls}
-      precision={allowDecimal ? decimalScale : 0}
+      precision={precision}
       parser={parser}
       formatter={formatter}
+      inputMode={allowDecimal ? 'decimal' : 'numeric'}
       onKeyDown={handleKeyDown}
       onPaste={handlePaste}
-      onCompositionStart={handleCompositionStart}
-      onCompositionUpdate={handleCompositionUpdate}
-      onCompositionEnd={handleCompositionEnd}
-      onChange={handleChange}
+      onChange={(v) => {
+        // number | null
+        onChange?.(v);
+      }}
     />
   );
 };

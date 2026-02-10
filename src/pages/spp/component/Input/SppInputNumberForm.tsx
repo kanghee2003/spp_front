@@ -12,11 +12,11 @@ const SppInputNumberForm = ({ name, control, ...props }: SppInputNumberFormProps
     <Controller
       name={name}
       control={control}
-      defaultValue={props.defaultValue}
+      defaultValue={props.defaultValue ?? null}
       render={({ field }) => (
         <SppInputNumber
           {...props}
-          value={(field.value ?? null) as any}
+          value={field.value ?? null}
           onChange={(v) => {
             field.onChange(v);
             props.onChange?.(v);
