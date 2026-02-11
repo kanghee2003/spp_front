@@ -8,6 +8,8 @@ import GlobalAxiosProvider from './provider/GlobalAxiosProvider';
 import GlobalMessageProvider from './provider/GlobalMessageProvider';
 import SppLoading from './pages/spp/component/Loading/SppLoading';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
+import 'react-grid-layout/css/styles.css';
+import 'react-resizable/css/styles.css';
 
 const queryClient = new QueryClient({
   defaultOptions: {

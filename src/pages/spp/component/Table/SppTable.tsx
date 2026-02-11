@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import type { ReactElement } from 'react';
+import type { Key, ReactElement } from 'react';
 
 import { IudType } from '@/type/common.type';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, PlusCircleOutlined } from '@ant-design/icons';
@@ -8,6 +8,8 @@ import type { TablePaginationConfig, TableProps } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 
 import { SppEllipsisTooltipCell, withEllipsisNoTitle } from './SppTableEllipsisTooltip';
+
+type ScrollBehaviorType = 'auto' | 'instant' | 'smooth';
 
 interface CustomTableProps<T extends object = any> extends TableProps<T> {
   rowNoFlag?: boolean;
@@ -35,26 +37,22 @@ const rowNoColumns: ColumnsType<any> = [
   },
 ];
 
-export const iudColums: ColumnsType<any> = [
-  {
-    title: () => {
-      return <EditOutlined />;
-    },
-    dataIndex: 'iudType',
-    key: 'iudType',
-    align: 'center',
-    width: '40px',
-    render: (value: IudType, row) => {
-      if (value === IudType.I) return <PlusCircleOutlined />;
-      if (value === IudType.U) return <CheckCircleOutlined />;
-      if (value === IudType.D) return <DeleteOutlined />;
-
-      return <></>;
-    },
+export const IUD_COLUMN: any = {
+  title: () => {
+    return <EditOutlined />;
   },
-];
+  dataIndex: 'iudType',
+  key: 'iudType',
+  align: 'center',
+  width: '40px',
+  render: (value: IudType, row: any) => {
+    if (value === IudType.I) return <PlusCircleOutlined />;
+    if (value === IudType.U) return <CheckCircleOutlined />;
+    if (value === IudType.D) return <DeleteOutlined />;
 
-export const IUD_COLUMN = iudColums[0];
+    return <></>;
+  },
+};
 
 function hasColumnKey(columns: any[] | undefined, key: string) {
   if (!columns) return false;
@@ -65,14 +63,12 @@ function hasColumnKey(columns: any[] | undefined, key: string) {
 }
 
 const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>, ref: any) => {
+  const wrapRef = useRef<HTMLDivElement | null>(null);
   const tableRef = useRef<any>(null);
   const prevDataSourceRef = useRef<any>(null);
   const pagingEnabled = props.pagination !== false;
   const initialPagination = typeof props.pagination === 'object' ? (props.pagination as TablePaginationConfig) : undefined;
 
-  // rowNoFlag(rowNoDescFlag) 옵션이 켜졌을 때는 "NO" 컬럼을 자동으로 앞에 붙인다.
-  // 기존처럼 effect 안에서 지역변수를 재할당하면 렌더 이후 값이 유지되지 않아
-  // 컬럼이 실제로 붙지 않는 문제가 생길 수 있어 memo 로 계산한다.
   const targetColumns = useMemo(() => {
     const cols = props.columns as any[] | undefined;
 
@@ -85,11 +81,11 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     return cols;
   }, [props.columns, props.rowNoFlag, props.rowNoDescFlag]);
 
-  // antd 기본 title 툴팁(브라우저 기본 툴팁)을 끄고, 셀 컴포넌트에서만 tooltip 처리
   const ellipsisColumns = useMemo(() => {
     if (!targetColumns) return targetColumns as any;
     return withEllipsisNoTitle(targetColumns as any);
   }, [targetColumns]);
+
   const [targetDataSource, setTargetDataSource] = useState<any>();
   const [paginationParam, setPaginationParam] = useState<CustomPageParam>({
     page: pagingEnabled && initialPagination?.current ? initialPagination.current : 1,
@@ -110,6 +106,98 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       }
     : false;
 
+  const getRowKey = (row: any): Key | undefined => {
+    const rk: any = (props as any).rowKey;
+    if (typeof rk === 'function') return rk(row);
+    if (typeof rk === 'string') return row?.[rk];
+    return row?.key;
+  };
+
+  const escapeCssAttr = (v: any) => {
+    const s = String(v);
+    const ce = (globalThis as any).CSS?.escape;
+    return ce ? ce(s) : s.replace(/["\\]/g, '\\$&');
+  };
+
+  const findTrByKey = (key: Key) => {
+    const root = wrapRef.current;
+    if (!root) return null;
+
+    const body = root.querySelector<HTMLDivElement>('.ant-table-body');
+    if (!body) return null;
+
+    const k = escapeCssAttr(key);
+    const tr = body.querySelector<HTMLTableRowElement>(`tr[data-row-key="${k}"]`) ?? body.querySelector<HTMLTableRowElement>(`tr[data-row-key='${k}']`);
+
+    return { body, tr };
+  };
+
+  const scrollTrIntoViewNearest = (body: HTMLDivElement, tr: HTMLTableRowElement, opts?: { behavior?: ScrollBehaviorType }) => {
+    const bodyRect = body.getBoundingClientRect();
+    const trRect = tr.getBoundingClientRect();
+
+    const hScrollBarH = Math.max(0, body.offsetHeight - body.clientHeight);
+
+    const visibleTop = bodyRect.top;
+    const visibleBottom = bodyRect.bottom - hScrollBarH;
+
+    const EPS = 2;
+
+    if (trRect.top < visibleTop + EPS) {
+      const delta = visibleTop - trRect.top + EPS;
+      const nextTop = Math.max(0, body.scrollTop - delta);
+
+      if (opts?.behavior === 'smooth') body.scrollTo({ top: nextTop, behavior: 'smooth' });
+      else body.scrollTop = nextTop;
+
+      return true;
+    }
+
+    if (trRect.bottom > visibleBottom - EPS) {
+      const delta = trRect.bottom - visibleBottom + EPS;
+      const maxTop = Math.max(0, body.scrollHeight - body.clientHeight);
+      const nextTop = Math.min(maxTop, body.scrollTop + delta);
+
+      if (opts?.behavior === 'smooth') body.scrollTo({ top: nextTop, behavior: 'smooth' });
+      else body.scrollTop = nextTop;
+
+      return true;
+    }
+
+    return true;
+  };
+
+  const scrollToFocusedRow = (opts?: { behavior?: ScrollBehaviorType }) => {
+    const index = selectRowIndex;
+    if (index === undefined || index === null) return false;
+
+    const view = Array.isArray(targetDataSource) ? targetDataSource : [];
+    const row = view[index];
+    if (!row) return false;
+
+    const key = getRowKey(row);
+    if (key === undefined || key === null) return false;
+
+    const found = findTrByKey(key);
+    if (!found?.body || !found.tr) return false;
+
+    return scrollTrIntoViewNearest(found.body, found.tr, opts);
+  };
+
+  const scrollToRowIndex = (index: number, opts?: { behavior?: ScrollBehaviorType }) => {
+    const view = Array.isArray(targetDataSource) ? targetDataSource : [];
+    const row = view[index];
+    if (!row) return false;
+
+    const key = getRowKey(row);
+    if (key === undefined || key === null) return false;
+
+    const found = findTrByKey(key);
+    if (!found?.body || !found.tr) return false;
+
+    return scrollTrIntoViewNearest(found.body, found.tr, opts);
+  };
+
   useImperativeHandle(
     ref,
     () => ({
@@ -123,8 +211,10 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
         }));
         setSelectRowIndex(undefined);
       },
+      scrollToFocusedRow,
+      scrollToRowIndex,
     }),
-    [targetDataSource],
+    [targetDataSource, selectRowIndex],
   );
 
   const setClassName = (record: any, index: number) => {
@@ -162,7 +252,6 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     if (props.rowNoFlag === true && viewRows.length > 0) {
       const array = [
         ...viewRows.map((item: any, idx: number) => {
-          // serverPaging이면 source가 이미 page 단위지만 rowNo는 전체 기준으로 계산해야 함
           item['rowNo'] = start + (idx + 1);
           return item;
         }),
@@ -221,7 +310,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
   }, []);
 
   return (
-    <>
+    <div ref={wrapRef}>
       <Table<T>
         ref={tableRef}
         {...props}
@@ -264,7 +353,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       >
         {props.children}
       </Table>
-    </>
+    </div>
   );
 }) as <T extends object = any>(props: CustomTableProps<T> & { ref?: any }) => ReactElement;
 

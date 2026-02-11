@@ -163,7 +163,6 @@ const Sample1 = () => {
 
   const handleSearch = (value: Sample1ListSearchReq) => {
     setSelectedRowKeys([]);
-    tableRef.current?.resetPagination?.();
     setPageParam((prev) => ({ ...prev, page: 1 }));
     setSeach({ ...search, searchText: value.searchText });
   };
@@ -258,7 +257,12 @@ const Sample1 = () => {
                 조회
               </SppButton>
 
-              <SppButton type="default" htmlType="button" icon={<SaveOutlined />} onClick={(e) => saveFormHandleSubmit(handleSave)(e)}>
+              <SppButton
+                type="default"
+                htmlType="button"
+                icon={<SaveOutlined />}
+                onClick={(e) => tableRef.current?.scrollToRowIndex(0, { behavior: 'smooth' })}
+              >
                 저장
               </SppButton>
             </Space>
