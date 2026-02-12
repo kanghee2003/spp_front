@@ -5,7 +5,7 @@ import { useMemo, useState } from 'react';
 import { useMessage } from '@/hook/useMessage';
 import { useMenuStore, type SystemKey } from '@/store/menu.store';
 import { useMdiStore } from '@/store/mdi.store';
-import { menuTreeEtc, menuTreeSpp } from '@/config/mockMenuConfig';
+import { getMockMenuTree } from '@/config/mockMenuConfig';
 
 type SystemLink = {
   label: string;
@@ -27,7 +27,7 @@ const SystemLinks = () => {
   const links = useMemo<SystemLink[]>(
     () => [
       { label: '문서반출 시스템', href: 'spp' },
-      { label: '개인정보 관리시스템', href: '#' },
+      { label: '개인정보 관리시스템', href: 'etc' },
       { label: '영상정보중앙 관리시스템', href: '#' },
       { label: '이상징후모니터링', href: '#' },
       { label: '정보보호모니터링', href: '#' },
@@ -109,7 +109,7 @@ const SystemLinks = () => {
                 }
 
                 setSystemKey(nextSystem);
-                setMenuTree(nextSystem === 'etc' ? menuTreeEtc : menuTreeSpp);
+                setMenuTree(getMockMenuTree(nextSystem));
                 resetTabs();
                 setOpen(false);
 

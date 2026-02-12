@@ -1,4 +1,4 @@
-import { MenuType, type MenuNode } from '@/store/menu.store';
+import { MenuType, type MenuNode, type SystemKey } from '@/store/menu.store';
 
 // AppLayout 등에서 type을 import할 수 있도록 re-export
 export type { MenuNode } from '@/store/menu.store';
@@ -59,6 +59,10 @@ export const menuTreeEtc: MenuNode[] = [
     children: [{ key: 'SAMPLE1', path: 'Sample1', label: 'Sample1', type: MenuType.VIEW }],
   },
 ];
+
+export function getMockMenuTree(systemKey: SystemKey): MenuNode[] {
+  return systemKey === 'etc' ? menuTreeEtc : menuTreeSpp;
+}
 
 // 기본 시스템은 spp
 export const menuTree: MenuNode[] = menuTreeSpp;

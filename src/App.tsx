@@ -1,10 +1,12 @@
 import { useEffect } from 'react';
 
 import AppLayout from '@/layout/AppLayout';
-import { menuTreeEtc, menuTreeSpp } from '@/config/mockMenuConfig';
+import { getMockMenuTree } from '@/config/mockMenuConfig';
 import { useMenuStore, type SystemKey } from '@/store/menu.store';
+import { setSystemCss } from '@/utils/css.util';
 
 export default function App() {
+  const systemKey = useMenuStore((s) => s.systemKey);
   const setSystemKey = useMenuStore((s) => s.setSystemKey);
   const setMenuTree = useMenuStore((s) => s.setMenuTree);
 
@@ -13,8 +15,12 @@ export default function App() {
     const seg = window.location.pathname.split('/').filter(Boolean)[0] as SystemKey | undefined;
     const nextSystem: SystemKey = seg === 'etc' || seg === 'spp' ? seg : 'spp';
     setSystemKey(nextSystem);
-    setMenuTree(nextSystem === 'etc' ? menuTreeEtc : menuTreeSpp);
+    setMenuTree(getMockMenuTree(nextSystem));
   }, [setSystemKey, setMenuTree]);
+
+  useEffect(() => {
+    setSystemCss(systemKey);
+  }, [systemKey]);
 
   return <AppLayout />;
 }
