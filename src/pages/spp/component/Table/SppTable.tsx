@@ -93,6 +93,8 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     pageEditFlag: true,
   });
   const [tableHeight, setTableHeight] = useState(800);
+
+  // ✅ 기존: 내부 선택 인덱스 유지
   const [selectRowIndex, setSelectRowIndex] = useState<number | undefined>(0);
 
   const computedTotal = Array.isArray(props.dataSource) ? props.dataSource.length : 0;
@@ -106,6 +108,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       }
     : false;
 
+  // ===== 스크롤 관련 유틸 (선택/하이라이트 로직에는 손 안댐) =====
   const getRowKey = (row: any): Key | undefined => {
     const rk: any = (props as any).rowKey;
     if (typeof rk === 'function') return rk(row);
@@ -119,7 +122,6 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     return ce ? ce(s) : s.replace(/["\\]/g, '\\$&');
   };
 
-  const findTrByKey = (key: Key) => {
     const root = wrapRef.current;
     if (!root) return null;
 
@@ -129,15 +131,15 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     const k = escapeCssAttr(key);
     const tr = body.querySelector<HTMLTableRowElement>(`tr[data-row-key="${k}"]`) ?? body.querySelector<HTMLTableRowElement>(`tr[data-row-key='${k}']`);
 
+    if (!tr) return null;
     return { body, tr };
   };
 
-  const scrollTrIntoViewNearest = (body: HTMLDivElement, tr: HTMLTableRowElement, opts?: { behavior?: ScrollBehaviorType }) => {
+  const scrollTrNearest = (body: HTMLDivElement, tr: HTMLTableRowElement, opts?: { behavior?: ScrollBehaviorType }) => {
     const bodyRect = body.getBoundingClientRect();
     const trRect = tr.getBoundingClientRect();
 
     const hScrollBarH = Math.max(0, body.offsetHeight - body.clientHeight);
-
     const visibleTop = bodyRect.top;
     const visibleBottom = bodyRect.bottom - hScrollBarH;
 
@@ -167,6 +169,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     return true;
   };
 
+  // ✅ 현재 선택된 row(내부 selectRowIndex)로 이동
   const scrollToFocusedRow = (opts?: { behavior?: ScrollBehaviorType }) => {
     const index = selectRowIndex;
     if (index === undefined || index === null) return false;
@@ -178,12 +181,13 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     const key = getRowKey(row);
     if (key === undefined || key === null) return false;
 
-    const found = findTrByKey(key);
-    if (!found?.body || !found.tr) return false;
+    const found = findBodyAndTrByKey(key);
+    if (!found) return false;
 
-    return scrollTrIntoViewNearest(found.body, found.tr, opts);
+    return scrollTrNearest(found.body, found.tr, opts);
   };
 
+  // ✅ (추가) 특정 index(현재 페이지 기준) row로 이동
   const scrollToRowIndex = (index: number, opts?: { behavior?: ScrollBehaviorType }) => {
     const view = Array.isArray(targetDataSource) ? targetDataSource : [];
     const row = view[index];
@@ -192,12 +196,19 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     const key = getRowKey(row);
     if (key === undefined || key === null) return false;
 
-    const found = findTrByKey(key);
-    if (!found?.body || !found.tr) return false;
+    const found = findBodyAndTrByKey(key);
+    if (!found) return false;
 
-    return scrollTrIntoViewNearest(found.body, found.tr, opts);
+    return scrollTrNearest(found.body, found.tr, opts);
   };
 
+  // ✅ (추가) 외부에서 선택(하이라이트) 자체를 바꾸고 싶을 때
+  const selectRowIndexByRef = (index: number | undefined) => {
+    setSelectRowIndex(index);
+    return true;
+  };
+
+  // ===== 기존 useImperativeHandle 유지 + 메서드만 추가 =====
   useImperativeHandle(
     ref,
     () => ({
@@ -213,6 +224,8 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       },
       scrollToFocusedRow,
       scrollToRowIndex,
+      selectRowIndex: selectRowIndexByRef,
+      getSelectedRowIndex: () => selectRowIndex,
     }),
     [targetDataSource, selectRowIndex],
   );
