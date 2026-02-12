@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import AppLayout from '@/layout/AppLayout';
 import { getMockMenuTree } from '@/config/mockMenuConfig';
 import { useMenuStore, type SystemKey } from '@/store/menu.store';
-import { setSystemCss } from '@/utils/css.util';
+import { setSystemCss } from '@/utils/system.util';
 
 export default function App() {
   const systemKey = useMenuStore((s) => s.systemKey);

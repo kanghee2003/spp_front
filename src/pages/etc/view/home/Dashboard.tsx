@@ -2,7 +2,7 @@ import { Card, Typography } from 'antd';
 
 const Dashboard = () => {
   return (
-    <Card>
+    <Card className="test">
       <Typography.Title level={4} style={{ marginTop: 0 }}>
         Dashboard Overview
       </Typography.Title>
