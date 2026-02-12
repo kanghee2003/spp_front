@@ -122,6 +122,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     return ce ? ce(s) : s.replace(/["\\]/g, '\\$&');
   };
 
+  const findBodyAndTrByKey = (key: Key) => {
     const root = wrapRef.current;
     if (!root) return null;
 
