@@ -1,7 +1,7 @@
 // src/pages/spp/component/Editor/JoditRichEditorForm.tsx
 import React from 'react';
 import { Control, Controller } from 'react-hook-form';
-import RichEditor, { RichEditorProps } from './RichEditor';
+import SppRichEditor, { RichEditorProps } from './SppRichEditor';
 
 export interface RichEditorFormProps extends Omit<RichEditorProps, 'defaultHtml' | 'onChangeHtml'> {
   name: string;
@@ -9,15 +9,15 @@ export interface RichEditorFormProps extends Omit<RichEditorProps, 'defaultHtml'
   defaultValue?: string;
 }
 
-const RichEditorForm = ({ name, control, defaultValue = '', ...props }: RichEditorFormProps) => {
+const SppRichEditorForm = ({ name, control, defaultValue = '', ...props }: RichEditorFormProps) => {
   return (
     <Controller
       name={name}
       control={control}
       defaultValue={defaultValue}
-      render={({ field }) => <RichEditor {...props} defaultHtml={field.value ?? ''} onChangeHtml={(html: string) => field.onChange(html)} />}
+      render={({ field }) => <SppRichEditor {...props} defaultHtml={field.value ?? ''} onChangeHtml={(html: string) => field.onChange(html)} />}
     />
   );
 };
 
-export default RichEditorForm;
+export default SppRichEditorForm;

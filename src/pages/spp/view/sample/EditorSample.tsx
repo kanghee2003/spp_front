@@ -1,8 +1,8 @@
 import { Card, Space, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 import SppButton from '../../component/Button/SppButton';
-import RichEditor from '../../component/Editor/RichEditor';
-import RichEditorForm from '../../component/Editor/RichEditorForm';
+import SppRichEditor from '../../component/Editor/SppRichEditor';
+import SppRichEditorForm from '../../component/Editor/SppRichEditorForm';
 import { useForm, useWatch } from 'react-hook-form';
 
 const { Title, Text } = Typography;
@@ -36,7 +36,7 @@ const EditorSample = () => {
           Jodit는 글자 입력마다 value를 다시 주입하면 포커스가 튈 수 있어서, initial(defaultHtml)만 주고
           필요할 때만 key를 변경해 리마운트(초기화/리로드)합니다.
         */}
-        <RichEditor key={editorKey} defaultHtml={''} onChangeHtml={setHtml} />
+        <SppRichEditor key={editorKey} defaultHtml={''} onChangeHtml={setHtml} />
         <Space>
           <SppButton
             onClick={() => {
@@ -66,7 +66,7 @@ const EditorSample = () => {
         </Title>
         <Text type="secondary">표(Table) / 이미지 업로드 / HTML 저장</Text>
 
-        <RichEditorForm name="editor" control={sampleControl} />
+        <SppRichEditorForm name="editor" control={sampleControl} />
 
         {watchForm && (
           <Card size="small" title="저장된 HTML (미리보기)" style={{ marginTop: 8 }}>

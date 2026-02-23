@@ -5,7 +5,7 @@ import NotFoundPage from '@/error/NotFoundPage';
 import { MenuType, type MenuNode } from '@/store/menu.store';
 import { useMenuStore } from '@/store/menu.store';
 import { useMdiStore } from '@/store/mdi.store';
-import { usePageKey } from '@/layout/PageKeyContext';
+import { useMdiContext } from '@/hook/useMdiContext';
 
 type PageModule = { default: React.ComponentType<any> };
 
@@ -77,11 +77,8 @@ const SppPageTabs = ({ onChange }: SppPageTabsProps) => {
   const systemKey = useMenuStore((s) => s.systemKey);
   const menuTree = useMenuStore((s) => s.menuTree);
 
-  // PageHost가 각 탭 렌더링 영역을 Provider로 감싸주기 때문에,
-  // 여기서는 현재 "페이지(=MDI 탭)"의 key 를 안전하게 가져올 수 있다.
-  const pageKey = usePageKey();
-  const activeKey = useMdiStore((s) => s.activeKey);
-  const viewKey = pageKey ?? activeKey;
+  const { viewKey, tabKey } = useMdiContext();
+  const setViewActiveTab = useMdiStore((s) => s.setViewActiveTab);
 
   const tabNodes = useMemo(() => {
     // menuTree 기준 TAB만 노출(권한 제어)
@@ -96,9 +93,15 @@ const SppPageTabs = ({ onChange }: SppPageTabsProps) => {
   const [activeTabKey, setActiveTabKey] = useState<string>('');
 
   // 권한/메뉴 변경으로 탭 목록이 바뀌면 activeTabKey 보정
+  // openTab({ key: TAB_KEY })로 들어온 경우(tabKey 존재)에는 tabKey 우선
   useEffect(() => {
     if (tabKeyList.length === 0) {
       setActiveTabKey('');
+      return;
+    }
+
+    if (tabKey && tabKeyList.includes(tabKey)) {
+      setActiveTabKey(tabKey);
       return;
     }
 
@@ -111,7 +114,7 @@ const SppPageTabs = ({ onChange }: SppPageTabsProps) => {
     if (!exists) {
       setActiveTabKey(tabKeyList[0]);
     }
-  }, [activeTabKey, tabKeyList]);
+  }, [activeTabKey, tabKey, tabKeyList]);
 
   // activeTabKey 변경을 화면단에서 받을 수 있게
   useEffect(() => {
@@ -160,7 +163,17 @@ const SppPageTabs = ({ onChange }: SppPageTabsProps) => {
     );
   }
 
-  return <Tabs activeKey={activeTabKey || undefined} onChange={(k) => setActiveTabKey(k as string)} items={items as any}></Tabs>;
+  return (
+    <Tabs
+      activeKey={activeTabKey || undefined}
+      onChange={(k) => {
+        const next = String(k);
+        setActiveTabKey(next);
+        if (viewKey) setViewActiveTab(viewKey, next);
+      }}
+      items={items as any}
+    ></Tabs>
+  );
 };
 
 export default SppPageTabs;

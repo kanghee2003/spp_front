@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import { useMdiStore } from '@/store/mdi.store';
 import { DEFAULT_SCREEN_KEY } from '@/config/mockMenuConfig';
 
-const MDITabs = () => {
+const MdiTabs = () => {
   const tabs = useMdiStore((s) => s.tabs);
   const activeKey = useMdiStore((s) => s.activeKey);
   const setActive = useMdiStore((s) => s.setActive);
@@ -33,13 +33,13 @@ const MDITabs = () => {
   };
 
   return (
-    <div style={{ padding: '8px 12px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+    <div style={{ padding: '0px 0px', borderBottom: '1px solid rgba(0,0,0,0.06)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 2 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId={droppableId} direction="horizontal">
               {(provided) => (
-                <div ref={provided.innerRef} {...provided.droppableProps} style={{ display: 'flex', gap: 8, overflowX: 'auto', paddingBottom: 4 }}>
+                <div ref={provided.innerRef} {...provided.droppableProps} style={{ display: 'flex', gap: 2, overflowX: 'auto', paddingBottom: 4 }}>
                   {tabs.map((t, idx) => (
                     <Draggable key={t.key} draggableId={t.key} index={idx} isDragDisabled={t.key === DEFAULT_SCREEN_KEY}>
                       {(p, snap) => (
@@ -95,7 +95,7 @@ const MDITabs = () => {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 8,
+              borderRadius: 50,
               border: '1px solid rgba(0, 0, 0, 0.12)',
               background: 'white',
               cursor: canGoLeft ? 'pointer' : 'not-allowed',
@@ -121,7 +121,7 @@ const MDITabs = () => {
               display: 'inline-flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: 8,
+              borderRadius: 50,
               border: '1px solid rgba(0, 0, 0, 0.12)',
               background: 'white',
               cursor: canGoRight ? 'pointer' : 'not-allowed',
@@ -148,4 +148,4 @@ const MDITabs = () => {
   );
 };
 
-export default MDITabs;
+export default MdiTabs;

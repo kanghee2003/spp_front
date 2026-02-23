@@ -20,7 +20,7 @@ export const menuTreeSpp: MenuNode[] = [
     type: MenuType.FOLDER,
     path: 'sample',
     children: [
-      { key: 'SAMPLE1', path: 'Sample1', label: 'Sample1', type: MenuType.VIEW },
+      { key: 'Sample1', path: 'Sample1', label: 'Sample1', type: MenuType.VIEW },
       { key: 'Compnent', path: 'ComponentSample', label: 'Component', type: MenuType.VIEW },
       { key: 'Editor', path: 'EditorSample', label: 'Editor', type: MenuType.VIEW },
       { key: 'FileUpload', path: 'FileUploadSample', label: 'FileUpload', type: MenuType.VIEW },
@@ -29,6 +29,7 @@ export const menuTreeSpp: MenuNode[] = [
       { key: 'DynamicTable', path: 'DynamicTableSample', label: 'Dynamic Table', type: MenuType.VIEW },
       { key: 'Footer', path: 'FooterSample', label: 'Footer Sample', type: MenuType.VIEW },
       { key: 'Widget', path: 'WidgetSample', label: 'Widget Sample', type: MenuType.VIEW },
+      { key: 'IpManagement', path: 'IpManagement', label: 'Ip Valid', type: MenuType.VIEW },
       {
         key: 'TabControl',
         path: 'TabControl',

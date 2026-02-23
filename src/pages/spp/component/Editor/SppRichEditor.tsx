@@ -24,7 +24,7 @@ export type RichEditorProps = {
   height?: number | string;
 };
 
-const RichEditor = ({
+const SppRichEditor = ({
   defaultHtml = '',
   onChangeHtml,
   uploadUrl = import.meta.env.VITE_EDITOR_IMAGE_UPLOAD_URI,
@@ -116,4 +116,4 @@ const RichEditor = ({
   );
 };
 
-export default RichEditor;
+export default SppRichEditor;

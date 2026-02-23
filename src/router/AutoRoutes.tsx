@@ -28,7 +28,6 @@ function normalizePath(parentPath: string, nodePath?: string): string {
   const p = (parentPath ?? '').replace(/^\/+|\/+$/g, '');
   const c = (nodePath ?? '').replace(/^\/+|\/+$/g, '');
 
-  // nodePath가 이미 "a/b" 형태면 parent와 무관하게 그 값을 우선(기존/신규 스펙 모두 대응)
   if (c.includes('/')) return c;
   if (!p) return c;
   if (!c) return p;
@@ -43,8 +42,6 @@ function flattenViewLeaves(tree: MenuNode[]): MenuNode[] {
 
       if (n.type === MenuType.VIEW) {
         out.push({ ...n, path: fullPath });
-        // VIEW 아래의 children은 TAB 용도로 쓰는 케이스가 많아서,
-        // 라우팅 leaf 계산에서는 VIEW 아래 children은 내려가지 않는다.
         continue;
       }
 
@@ -59,7 +56,6 @@ function flattenViewLeaves(tree: MenuNode[]): MenuNode[] {
 }
 
 export function loadRoutes(systemKey: string, menuTree: MenuNode[]): AppRoute[] {
-  // 1) pages 폴더 스캔 결과를 "{systemKey,pagePath}" -> loader 로 매핑
   const loaderBySystemPath = new Map<string, Map<string, () => Promise<PageModule>>>();
   for (const [file, loader] of Object.entries(pageModules)) {
     const parsed = fileToSystemAndPagePath(file);
@@ -71,7 +67,6 @@ export function loadRoutes(systemKey: string, menuTree: MenuNode[]): AppRoute[] 
 
   const loaderByPath = loaderBySystemPath.get(systemKey) ?? new Map<string, () => Promise<PageModule>>();
 
-  // 2) menuTree 기준으로만 라우트 구성
   const leaves = flattenViewLeaves(menuTree);
 
   const routes: AppRoute[] = leaves.map((leaf) => {

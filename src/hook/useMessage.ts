@@ -6,12 +6,12 @@ export const useMessage = () => {
   const closeConfirm = useMessageStore((s) => s.closeConfirm);
   const closeAlert = useMessageStore((s) => s.closeAlert);
 
-  const genRequestId = () => `${Date.now()}_${Math.random().toString(36).slice(2)}`;
+  const getRequestId = () => `${Date.now()}_${Math.random().toString(36).slice(2)}`;
 
   const confirmMessage = (message?: string, okText?: string, cancelText?: string): Promise<boolean> => {
     return new Promise((resolve) => {
       openConfirm({
-        requestId: genRequestId(),
+        requestId: getRequestId(),
         message: message ?? '',
         okText: okText ?? '확인',
         cancelText: cancelText ?? '취소',
@@ -31,7 +31,7 @@ export const useMessage = () => {
   const alertMessage = (message?: string, okText?: string): Promise<boolean> => {
     return new Promise((resolve) => {
       openAlert({
-        requestId: genRequestId(),
+        requestId: getRequestId(),
         message: message ?? '',
         okText: okText ?? '확인',
         onClickOK: () => {

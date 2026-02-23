@@ -15,7 +15,7 @@ export interface ExcelUploadPopupProps extends SppModalProps {
   startCol?: number;
 }
 
-const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
+const SppExcelUploadPopup = (props: ExcelUploadPopupProps) => {
   const [fileList, setFileList] = useState<UploadFile[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [rawRows, setRawRows] = useState<any[][]>([]);
@@ -235,4 +235,4 @@ const ExcelUploadPopup = (props: ExcelUploadPopupProps) => {
   );
 };
 
-export default ExcelUploadPopup;
+export default SppExcelUploadPopup;

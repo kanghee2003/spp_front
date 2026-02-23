@@ -51,7 +51,7 @@ function isAllowedInsertedText(text: string, allowDecimal: boolean) {
 }
 
 const SppInputNumber = (props: SppInputNumberProps) => {
-  const { allowDecimal = false, useComma = true, decimalScale, controls = false, onKeyDown, onPaste, onChange, ...rest } = props;
+  const { allowDecimal = false, useComma = false, decimalScale, controls = false, onKeyDown, onPaste, onChange, ...rest } = props;
 
   const inputNumberRef = useRef<any>(null);
 

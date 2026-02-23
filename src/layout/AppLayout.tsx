@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { MenuNode } from '@/config/mockMenuConfig';
 import { DEFAULT_SCREEN_KEY } from '@/config/mockMenuConfig';
-import MDITabs from '@/layout/MdiTabs';
+import MdiTabs from '@/layout/MdiTabs';
 import PageHost from '@/layout/PageHost';
 import SystemLinks from '@/layout/SystemLinks';
 import { useMdiStore } from '@/store/mdi.store';
@@ -55,9 +55,7 @@ const buildMenuItems = (tree: MenuNode[]): NonNullable<MenuProps['items']> => {
       key: node.key,
       label: node.label,
       icon,
-      children: (node.children ?? [])
-        .map((c: MenuNode) => toItem(c))
-        .filter(Boolean) as NonNullable<MenuProps['items']>,
+      children: (node.children ?? []).map((c: MenuNode) => toItem(c)).filter(Boolean) as NonNullable<MenuProps['items']>,
     };
   };
 
@@ -146,7 +144,6 @@ const AppLayout = () => {
     const root = (items ?? []).find((it) => String(it?.key) === floatingRootKey) as any;
     if (!root) return [];
 
-    // 1뎁스가 그룹이면 children만 보여주기(스크린샷 2처럼)
     if (Array.isArray(root.children) && root.children.length > 0) {
       return root.children as NonNullable<MenuProps['items']>;
     }
@@ -166,20 +163,6 @@ const AppLayout = () => {
     setOpenKeys(defaultOpenKeys);
   }, [defaultOpenKeys]);
 
-  const labelMap = useMemo(() => {
-    const m = new Map<string, string>();
-
-    const walk = (nodes: MenuNode[]) => {
-      for (const n of nodes) {
-        m.set(n.key, n.label);
-        if (n.children && n.children.length > 0) walk(n.children);
-      }
-    };
-
-    walk(menuTree);
-    return m;
-  }, [menuTree]);
-
   const floatingTitle = useMemo(() => {
     if (!floatingRootKey) return '';
     const root = topMenus.find((m) => m.key === floatingRootKey);
@@ -188,9 +171,8 @@ const AppLayout = () => {
 
   const onClick: MenuProps['onClick'] = (info) => {
     const key = String(info.key);
-    const label = labelMap.get(key) || key;
 
-    openTab({ key, title: label });
+    openTab({ key });
 
     closeFloating();
   };
@@ -273,7 +255,7 @@ const AppLayout = () => {
                       if (sidebarCollapsed) setSidebarCollapsed(false);
 
                       if (m.type === MenuType.VIEW) {
-                        openTab({ key: m.key, title: m.label });
+                        openTab({ key: m.key });
                         closeFloating();
                         return;
                       }
@@ -380,11 +362,11 @@ const AppLayout = () => {
         </Sider>
 
         <Layout>
-          <MDITabs />
+          <MdiTabs />
           <Content style={{ padding: 16, overflow: 'auto' }}>
             <PageHost />
           </Content>
-          <Footer style={{ textAlign: 'center' }}>Footer</Footer>
+          {/* <Footer style={{ textAlign: 'center' }}>Footer</Footer> */}
         </Layout>
       </Layout>
 

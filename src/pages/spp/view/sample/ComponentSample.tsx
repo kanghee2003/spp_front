@@ -7,7 +7,7 @@ import SppInputText from '../../component/Input/SppInputText';
 import SppSelect from '../../component/Select/SppSelect';
 import SppSelectForm from '../../component/Select/SppSelectForm';
 import SamplePopup from './popup/SamplePopup';
-import ExcelUploadPopup from '../../component/Excel/ExcelUploadPopup';
+import SppExcelUploadPopup from '../../component/Excel/SppExcelUploadPopup';
 
 import SppInputTextForm from '../../component/Input/SppInputTextForm';
 import SppInputNumberForm from '../../component/Input/SppInputNumberForm';
@@ -15,6 +15,7 @@ import { useMessage } from '@/hook/useMessage';
 import SppDatePickerForm from '../../component/DatePicker/SppDatePickerForm';
 import SppAutoComplete from '../../component/AutoComplete/SppAutoComplete';
 import { useMdiStore } from '@/store/mdi.store';
+import { useMdiContext } from '@/hook/useMdiContext';
 import { ComponentSampleOptions, ExcelUploadList, ExcelUploadRowScheme } from '../../type/ComponentSample.type';
 import SppAutoCompleteForm from '../../component/AutoComplete/SppAutocompleteForm';
 import { AutoCompleteMode } from '../../type/cm/AutoComplete.type';
@@ -34,6 +35,7 @@ type ComponentSampleFomeType = {
 };
 const ComponentSample = () => {
   const openTab = useMdiStore((s) => s.openTab);
+  const mdi = useMdiContext();
   const { alertMessage } = useMessage();
   const [regExpValue, setRegExpValue] = useState<string>('');
   const [optionList, setOptionList] = useState<ComponentSampleOptions[]>([]);
@@ -269,9 +271,51 @@ const ComponentSample = () => {
             </SppButton>
           </Col>
           <Col span={4}>
-            <SppButton type="default" htmlType="button" onClick={() => openTab({ key: 'DASHBOARD', title: 'x' })}>
+            <SppButton type="default" htmlType="button" onClick={() => openTab({ key: 'DASHBOARD' })}>
               대시보드로 이동
             </SppButton>
+          </Col>
+          <Col span={6}>
+            <SppButton
+              type="default"
+              htmlType="button"
+              onClick={() =>
+                openTab({
+                  key: 'Menu',
+                  params: {
+                    from: 'ComponentSample',
+                    tick: Date.now(),
+                  },
+                })
+              }
+            >
+              MenuManagement로 이동
+            </SppButton>
+          </Col>
+          <Col span={6}>
+            <SppButton
+              type="default"
+              htmlType="button"
+              onClick={() =>
+                openTab({
+                  key: 'TabControlTab2',
+                  params: {
+                    from: 'ComponentSample',
+                    tick: Date.now(),
+                  },
+                })
+              }
+            >
+              TabControlTab2로 이동
+            </SppButton>
+          </Col>
+        </Row>
+
+        <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
+          <Col span={24}>
+            <Card size="small" title="MDI Context">
+              <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{JSON.stringify(mdi, null, 2)}</pre>
+            </Card>
           </Col>
         </Row>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
@@ -291,7 +335,7 @@ const ComponentSample = () => {
         </Row>
       </Card>
       <SamplePopup open={isOpen} title={'Test Title'} style={{ minWidth: '800px' }} onOk={() => setIsOpen(false)} onCancel={() => setIsOpen(false)} />
-      <ExcelUploadPopup
+      <SppExcelUploadPopup
         open={isExcelOpen}
         title={'Excel Upload Sample'}
         style={{ minWidth: '600px' }}

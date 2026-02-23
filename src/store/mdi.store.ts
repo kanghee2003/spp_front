@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { DEFAULT_SCREEN_KEY } from '@/config/mockMenuConfig';
+import { MenuType, type MenuNode, useMenuStore } from '@/store/menu.store';
 
 export type MdiTab = {
   /** Screen key (AutoRoutes/menuTree와 동일한 값) */
@@ -7,15 +8,26 @@ export type MdiTab = {
   title: string;
 };
 
+export type OpenTabArgs = {
+  /** Screen key (AutoRoutes/menuTree와 동일한 값) */
+  key: string;
+  /** 화면으로 추가 전달할 파라미터(옵션) */
+  params?: any;
+};
+
 type State = {
   tabs: MdiTab[];
   activeKey: string;
-  openTab: (tab: MdiTab) => void;
+  openTab: (args: OpenTabArgs) => void;
   closeTab: (key: string) => void;
   resetTabs: () => void;
   setActive: (key: string) => void;
   reorder: (from: number, to: number) => void;
   ensureDashboard: () => void;
+
+  getTabParams: (key: string) => any | undefined;
+  getViewActiveTab: (viewKey: string) => string | undefined;
+  setViewActiveTab: (viewKey: string, tabKey: string) => void;
 };
 
 const DASHBOARD_KEY = DEFAULT_SCREEN_KEY;
@@ -23,16 +35,78 @@ const DASHBOARD_KEY = DEFAULT_SCREEN_KEY;
 /** MDI 상단 탭바에서 열 수 있는 최대 탭 수 (대시보드 포함) */
 const MAX_MDI_TABS = 10;
 
+function findNodeByKey(tree: MenuNode[], key: string): MenuNode | null {
+  const walk = (nodes: MenuNode[]): MenuNode | null => {
+    for (const n of nodes) {
+      if (n.key === key) return n;
+
+      if (n.children && n.children.length > 0) {
+        const found = walk(n.children);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  return walk(tree);
+}
+
+function findParentViewKeyForTab(tree: MenuNode[], tabKey: string): string | null {
+  const walk = (nodes: MenuNode[], currentViewKey?: string): string | null => {
+    for (const n of nodes) {
+      const nextViewKey = n.type === MenuType.VIEW ? n.key : currentViewKey;
+
+      if (n.type === MenuType.TAB && n.key === tabKey) {
+        return nextViewKey ?? null;
+      }
+
+      if (n.children && n.children.length > 0) {
+        const found = walk(n.children, nextViewKey);
+        if (found) return found;
+      }
+    }
+    return null;
+  };
+
+  return walk(tree);
+}
+
+function resolveTitleByKey(key: string): string {
+  try {
+    const tree = useMenuStore.getState().menuTree;
+    const node = findNodeByKey(tree, key);
+    return node?.label ?? key;
+  } catch {
+    return key;
+  }
+}
+
 export const useMdiStore = create<State>((set, get) => ({
   tabs: [],
   activeKey: DASHBOARD_KEY,
+
+  getTabParams: (key) => {
+    const s = get() as any;
+    return s._paramsByKey?.[key];
+  },
+
+  getViewActiveTab: (viewKey) => {
+    const s = get() as any;
+    return s._viewActiveTab?.[viewKey];
+  },
+
+  setViewActiveTab: (viewKey, tabKey) =>
+    set((state) => {
+      const next = { ...(state as any)._viewActiveTab, [viewKey]: tabKey };
+      return { ...(state as any), _viewActiveTab: next };
+    }) as any,
 
   ensureDashboard: () => {
     const { tabs } = get();
     const has = tabs.some((t) => t.key === DASHBOARD_KEY);
     if (!has) {
       set({
-        tabs: [{ key: DASHBOARD_KEY, title: 'Dashboard' }],
+        tabs: [{ key: DASHBOARD_KEY, title: resolveTitleByKey(DASHBOARD_KEY) }],
         activeKey: DASHBOARD_KEY,
       });
       return;
@@ -42,7 +116,7 @@ export const useMdiStore = create<State>((set, get) => ({
     if (tabs[0]?.key !== DASHBOARD_KEY) {
       const rest = tabs.filter((t) => t.key !== DASHBOARD_KEY);
       const keep = rest.slice(Math.max(0, rest.length - (MAX_MDI_TABS - 1)));
-      const nextTabs = [{ key: DASHBOARD_KEY, title: 'Dashboard' }, ...keep];
+      const nextTabs = [{ key: DASHBOARD_KEY, title: resolveTitleByKey(DASHBOARD_KEY) }, ...keep];
       set({ tabs: nextTabs });
       return;
     }
@@ -55,10 +129,16 @@ export const useMdiStore = create<State>((set, get) => ({
     }
   },
 
-  openTab: (tab) =>
+  openTab: (args) =>
     set((state) => {
-      const exists = state.tabs.some((t) => t.key === tab.key);
-      let nextTabs = exists ? state.tabs : [...state.tabs, tab];
+      const tree = useMenuStore.getState().menuTree;
+      const node = findNodeByKey(tree, args.key);
+
+      const viewKey = node?.type === MenuType.TAB ? findParentViewKeyForTab(tree, args.key) ?? args.key : args.key;
+      const title = resolveTitleByKey(viewKey);
+
+      const exists = state.tabs.some((t) => t.key === viewKey);
+      let nextTabs = exists ? state.tabs : [...state.tabs, { key: viewKey, title }];
 
       // 최대 탭 수 초과 시, 가장 왼쪽(대시보드 다음)부터 자동으로 닫기
       if (!exists && nextTabs.length > MAX_MDI_TABS) {
@@ -85,7 +165,29 @@ export const useMdiStore = create<State>((set, get) => ({
         }
       }
 
-      return { tabs: nextTabs, activeKey: tab.key };
+      const nextParamsByKey = { ...(state as any)._paramsByKey };
+      const nextViewActiveTab = { ...(state as any)._viewActiveTab };
+
+      if (args.params !== undefined) {
+        if (node?.type === MenuType.TAB) {
+          nextParamsByKey[args.key] = args.params;
+          nextViewActiveTab[viewKey] = args.key;
+        } else {
+          nextParamsByKey[viewKey] = args.params;
+        }
+      } else {
+        if (node?.type === MenuType.TAB) {
+          nextViewActiveTab[viewKey] = args.key;
+        }
+      }
+
+      return {
+        ...(state as any),
+        tabs: nextTabs,
+        activeKey: viewKey,
+        _paramsByKey: nextParamsByKey,
+        _viewActiveTab: nextViewActiveTab,
+      };
     }),
 
   closeTab: (key) =>
@@ -97,22 +199,32 @@ export const useMdiStore = create<State>((set, get) => ({
       const nextTabs = state.tabs.filter((t) => t.key !== key);
       const nextActive = state.activeKey === key ? (nextTabs[nextTabs.length - 1]?.key ?? DASHBOARD_KEY) : state.activeKey;
 
+      const nextParamsByKey = { ...(state as any)._paramsByKey };
+      const nextViewActiveTab = { ...(state as any)._viewActiveTab };
+      delete nextParamsByKey[key];
+      delete nextViewActiveTab[key];
+
       // 최소 1개(대시보드)는 항상 유지
       if (nextTabs.length === 0) {
         return {
-          tabs: [{ key: DASHBOARD_KEY, title: 'Dashboard' }],
+          ...(state as any),
+          tabs: [{ key: DASHBOARD_KEY, title: resolveTitleByKey(DASHBOARD_KEY) }],
           activeKey: DASHBOARD_KEY,
+          _paramsByKey: nextParamsByKey,
+          _viewActiveTab: nextViewActiveTab,
         };
       }
 
-      return { tabs: nextTabs, activeKey: nextActive };
+      return { ...(state as any), tabs: nextTabs, activeKey: nextActive, _paramsByKey: nextParamsByKey, _viewActiveTab: nextViewActiveTab };
     }),
 
   // 시스템 전환 등으로 모든 탭을 닫아야 할 때 사용
   resetTabs: () =>
     set(() => ({
-      tabs: [{ key: DASHBOARD_KEY, title: 'Dashboard' }],
+      tabs: [{ key: DASHBOARD_KEY, title: resolveTitleByKey(DASHBOARD_KEY) }],
       activeKey: DASHBOARD_KEY,
+      _paramsByKey: {},
+      _viewActiveTab: {},
     })),
 
   setActive: (key) => set({ activeKey: key }),
