@@ -8,7 +8,7 @@ import {
   AutoCompleteUserPageScheme,
 } from '../../type/cm/AutoComplete.type';
 
-export const AutoCompleteApi = () => {
+export const SppAutoCompleteApi = () => {
   const getAutoCompleteUserList = async (params: AutoCompleteSearchParams): Promise<AutoCompleteUserPage> => {
     const response = await axiosService().get<ApiResponse<AutoCompleteUserPage>>(
       '/api/auto-complete/user',

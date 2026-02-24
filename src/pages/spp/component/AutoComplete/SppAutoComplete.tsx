@@ -1,7 +1,7 @@
 import { AutoComplete, AutoCompleteProps, Spin } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { AutoCompleteApi } from '../../api/cm/AutoComplete.api';
-import { AutoCompleteService } from '../../service/cm/AutoComplete.service';
+import { SppAutoCompleteApi } from '../../api/cm/SppAutoComplete.api';
+import { SppAutoCompleteService } from '../../service/cm/SppAutoComplete.service';
 import { AutoCompleteMode } from '../../type/cm/AutoComplete.type';
 
 export interface SppAutocompleteProps extends AutoCompleteProps {
@@ -35,11 +35,11 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
   // 초기 keyValue 동기화 중복 방지
   const lastSyncedKeyRef = useRef<string | null>(null);
 
-  const userQuery = AutoCompleteService().getAutoCompleteUserList({
+  const userQuery = SppAutoCompleteService().getAutoCompleteUserList({
     query: searchValue,
     enabled: mode === AutoCompleteMode.USER,
   });
-  const orgQuery = AutoCompleteService().getAutoCompleteOrgList({
+  const orgQuery = SppAutoCompleteService().getAutoCompleteOrgList({
     query: searchValue,
     enabled: mode === AutoCompleteMode.ORG,
   });
@@ -123,7 +123,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
     const syncDisplay = async () => {
       try {
         if (mode === AutoCompleteMode.USER) {
-          const res = await AutoCompleteApi().getAutoCompleteUserList({
+          const res = await SppAutoCompleteApi().getAutoCompleteUserList({
             query: key,
             cursor: 1,
             size: 20,
@@ -147,7 +147,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
         }
 
         if (mode === AutoCompleteMode.ORG) {
-          const res = await AutoCompleteApi().getAutoCompleteOrgList({
+          const res = await SppAutoCompleteApi().getAutoCompleteOrgList({
             query: key,
             cursor: 1,
             size: 20,
