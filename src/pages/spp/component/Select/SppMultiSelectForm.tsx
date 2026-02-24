@@ -1,21 +1,21 @@
 import type { Control } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
-import SppSelect, { type SppSelectProps } from './SppSelect';
+import SppMultiSelect, { type SppMultiSelectProps } from './SppMultiSelect';
 
 type Primitive = string | number;
 
-export type SppSelectFormProps<V extends Primitive = any> = SppSelectProps<V> & {
+export type SppMultiSelectFormProps<V extends Primitive = any> = SppMultiSelectProps<V> & {
   name: string;
   control: Control<any>;
 };
 
-const SppSelectForm = <V extends Primitive = any>({ name, control, ...props }: SppSelectFormProps<V>) => {
+const SppMultiSelectForm = <V extends Primitive = any>({ name, control, ...props }: SppMultiSelectFormProps<V>) => {
   return (
     <Controller
       name={name}
       control={control}
       render={({ field }) => (
-        <SppSelect<V>
+        <SppMultiSelect<V>
           {...props}
           value={field.value ?? undefined}
           onChange={(v, option) => {
@@ -32,4 +32,4 @@ const SppSelectForm = <V extends Primitive = any>({ name, control, ...props }: S
   );
 };
 
-export default SppSelectForm;
+export default SppMultiSelectForm;

@@ -1,11 +1,11 @@
 import { Select, type SelectProps } from 'antd';
 
 type Primitive = string | number;
-type BaseProps<V extends Primitive> = Omit<SelectProps<V>, 'mode' | 'labelInValue' | 'value' | 'defaultValue' | 'onChange'> & {
-  mode?: undefined;
-  value?: V;
-  defaultValue?: V;
-  onChange?: (value: V, option: any) => void;
+type BaseProps<V extends Primitive> = Omit<SelectProps<V[]>, 'mode' | 'labelInValue' | 'value' | 'defaultValue' | 'onChange'> & {
+  mode: 'multiple' | 'tags';
+  value?: V[];
+  defaultValue?: V[];
+  onChange?: (value: V[], option: any) => void;
 };
 
 function mergePopupRootClassName(props: any, extra?: string) {
@@ -13,16 +13,17 @@ function mergePopupRootClassName(props: any, extra?: string) {
   return [props.classNames?.popup?.root, dropdownClassName, extra].filter(Boolean).join(' ');
 }
 
-export type SppSelectProps<V extends Primitive = any> = BaseProps<V>;
+export type SppMultiSelectProps<V extends Primitive = any> = BaseProps<V>;
 
-const SppSelect = <V extends Primitive = any>(props: BaseProps<V>) => {
-  const popupRootClassName = mergePopupRootClassName(props);
+const SppMultiSelect = <V extends Primitive = any>(props: BaseProps<V>) => {
+  const popupRootClassName = mergePopupRootClassName(props, 'spp-select-multi-checkbox');
 
   const { ...rest } = props as any;
 
   return (
-    <Select<V>
+    <Select<V[]>
       {...rest}
+      mode={props.mode}
       classNames={{
         ...props.classNames,
         popup: {
@@ -34,4 +35,4 @@ const SppSelect = <V extends Primitive = any>(props: BaseProps<V>) => {
   );
 };
 
-export default SppSelect;
+export default SppMultiSelect;

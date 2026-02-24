@@ -23,6 +23,8 @@ import { downloadFile } from '@/utils/download.util';
 
 import { isMatch } from '@/utils/regexp.util';
 import { REGEXP_RULES } from '@/type/common.regexp';
+import SppMultiSelectForm from '../../component/Select/SppMultiSelectForm';
+import SppMultiSelect from '../../component/Select/SppMultiSelect';
 
 type ComponentSampleFomeType = {
   select: string;
@@ -138,6 +140,7 @@ const ComponentSample = () => {
           <Col span={6}>
             <SppSelect
               style={{ width: 120 }}
+              defaultValue={'jack'}
               placeholder="Select a person"
               options={[
                 { value: 'jack', label: 'Jack' },
@@ -153,6 +156,7 @@ const ComponentSample = () => {
           <Col span={6}>
             <SppSelectForm
               name="select"
+              defaultValue={'jack'}
               style={{ width: 120 }}
               control={sampleControl}
               placeholder="Select a person"
@@ -170,7 +174,7 @@ const ComponentSample = () => {
             <Typography.Text>Multi Select</Typography.Text>
           </Col>
           <Col span={6}>
-            <SppSelect
+            <SppMultiSelect
               mode="multiple"
               style={{ width: 120 }}
               placeholder="Select a person"
@@ -186,7 +190,7 @@ const ComponentSample = () => {
             <Typography.Text>Multi Select Form</Typography.Text>
           </Col>
           <Col span={6}>
-            <SppSelectForm
+            <SppMultiSelectForm
               mode="multiple"
               name="multiselect"
               defaultValue={['jack', 'lucy']}
