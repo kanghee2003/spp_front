@@ -6,7 +6,7 @@ import { DefaultOptionType } from 'antd/es/select';
  * - 백엔드 응답은 JSON이라 런타임에 타입이 보장되지 않으므로 zod로 검증합니다.
  * - (code, message, item) 형태를 가정합니다.
  */
-export const ApiResponseSchema = <T extends z.ZodTypeAny>(itemSchema: T) => {
+export const ApiResponseScheme = <T extends z.ZodTypeAny>(itemSchema: T) => {
   // strict(): 정의되지 않은 필드가 섞여 들어오는 케이스도 빨리 잡기 위함
   return z
     .object({

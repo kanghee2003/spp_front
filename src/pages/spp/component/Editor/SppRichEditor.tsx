@@ -12,7 +12,7 @@ const getCookie = (name: string) => {
   return found ? found.split('=')[1] : undefined;
 };
 
-export type RichEditorProps = {
+export type SppRichEditorProps = {
   /** 초기값만 사용 (typing 중에는 외부에서 value로 다시 주입하지 않음) */
   defaultHtml?: string;
   onChangeHtml?: (html: string) => void;
@@ -32,7 +32,7 @@ const SppRichEditor = ({
   headers,
   readOnly = false,
   height = 520,
-}: RichEditorProps) => {
+}: SppRichEditorProps) => {
   const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
   const [initialHtml] = useState(() => defaultHtml);
 

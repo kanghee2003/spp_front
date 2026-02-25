@@ -2,10 +2,10 @@ import { AutoComplete, AutoCompleteProps, Spin } from 'antd';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { SppAutoCompleteApi } from '../../api/cm/SppAutoComplete.api';
 import { SppAutoCompleteService } from '../../service/cm/SppAutoComplete.service';
-import { AutoCompleteMode } from '../../type/cm/AutoComplete.type';
+import { AutoCompleteMode as SppAutoCompleteMode } from '../../type/cm/AutoComplete.type';
 
 export interface SppAutocompleteProps extends AutoCompleteProps {
-  mode?: AutoCompleteMode;
+  mode?: SppAutoCompleteMode;
   showName?: boolean;
   size?: 'small' | 'middle' | 'large';
   label?: string;
@@ -37,14 +37,14 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
 
   const userQuery = SppAutoCompleteService().getAutoCompleteUserList({
     query: searchValue,
-    enabled: mode === AutoCompleteMode.USER,
+    enabled: mode === SppAutoCompleteMode.USER,
   });
   const orgQuery = SppAutoCompleteService().getAutoCompleteOrgList({
     query: searchValue,
-    enabled: mode === AutoCompleteMode.ORG,
+    enabled: mode === SppAutoCompleteMode.ORG,
   });
 
-  const query = mode === AutoCompleteMode.USER ? userQuery : orgQuery;
+  const query = mode === SppAutoCompleteMode.USER ? userQuery : orgQuery;
 
   const options: any[] = useMemo(() => {
     const pages = query.data?.pages ?? [];
@@ -65,7 +65,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
 
     const sepStyle = { opacity: 0.4 };
 
-    if (mode === AutoCompleteMode.ORG) {
+    if (mode === SppAutoCompleteMode.ORG) {
       return items.map((x) => ({
         ...x,
         value: `${x.orgCd} | ${x.orgNm}`,
@@ -80,7 +80,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
       }));
     }
 
-    if (mode === AutoCompleteMode.USER) {
+    if (mode === SppAutoCompleteMode.USER) {
       return items.map((x) => ({
         ...x,
         value: `${x.userId} | ${x.gradeNm}`,
@@ -122,7 +122,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
 
     const syncDisplay = async () => {
       try {
-        if (mode === AutoCompleteMode.USER) {
+        if (mode === SppAutoCompleteMode.USER) {
           const res = await SppAutoCompleteApi().getAutoCompleteUserList({
             query: key,
             cursor: 1,
@@ -146,7 +146,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
           return;
         }
 
-        if (mode === AutoCompleteMode.ORG) {
+        if (mode === SppAutoCompleteMode.ORG) {
           const res = await SppAutoCompleteApi().getAutoCompleteOrgList({
             query: key,
             cursor: 1,

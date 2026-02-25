@@ -4,7 +4,14 @@ import SppCheckboxForm from '@/pages/spp/component/Checkbox/SppCheckboxForm';
 import SppInputTextForm from '@/pages/spp/component/Input/SppInputTextForm';
 import SppTable, { IUD_COLUMN } from '@/pages/spp/component/Table/SppTable';
 import { Sample1Service } from '@/pages/spp/service/Sample1.service';
-import { Sample1ListSearchReq, Sample1ListSearchScheme, Sample1Res, Sample1SaveReq, Sample1SaveScheme } from '@/pages/spp/type/Sample1.type';
+import {
+  Sample1ListSearchPageReq,
+  Sample1ListSearchReq,
+  Sample1ListSearchScheme,
+  Sample1Res,
+  Sample1SaveReq,
+  Sample1SaveScheme,
+} from '@/pages/spp/type/Sample1.type';
 import { SaveOutlined, SearchOutlined } from '@ant-design/icons';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -18,8 +25,7 @@ import { IudType } from '../../../../type/common.type';
 
 const Sample1 = () => {
   const alertFormErrors = useAlertFormErrors();
-  const [search, setSeach] = useState<Sample1ListSearchReq | null>(null);
-  const [pageParam, setPageParam] = useState<{ page: number; pageSize: number }>({ page: 1, pageSize: 10 });
+  const [search, setSeach] = useState<Sample1ListSearchPageReq | null>({ page: 1, pageSize: 10 });
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const tableRef = useRef<any>(null);
 
@@ -60,7 +66,7 @@ const Sample1 = () => {
     name: 'list',
   });
 
-  const { data: groupPage, refetch: refetchGroupData } = Sample1Service().getGroupListPage(search?.searchText ?? '', pageParam.page, pageParam.pageSize);
+  const { data: groupPage, refetch: refetchGroupData } = Sample1Service().getGroupListPage({ ...search });
   const saveQuery = Sample1Service().save();
 
   /* ============================================== TEMPLATE ============================================== */
@@ -163,8 +169,7 @@ const Sample1 = () => {
 
   const handleSearch = (value: Sample1ListSearchReq) => {
     setSelectedRowKeys([]);
-    setPageParam((prev) => ({ ...prev, page: 1 }));
-    setSeach({ ...search, searchText: value.searchText });
+    setSeach({ ...search, searchText: value.searchText, page: 1 });
   };
 
   const handleSave = () => {
@@ -195,7 +200,7 @@ const Sample1 = () => {
   useEffect(() => {
     if (!search) return;
     refetchGroupData();
-  }, [search, pageParam.page, pageParam.pageSize]);
+  }, [search]);
 
   useEffect(() => {
     if (!groupPage) {
@@ -300,10 +305,7 @@ const Sample1 = () => {
           onChange={(pagination) => {
             // 페이지 변경 시 서버에서 해당 페이지 데이터를 다시 조회
             setSelectedRowKeys([]);
-            setPageParam({
-              page: pagination.current ? pagination.current : 1,
-              pageSize: pagination.pageSize ? pagination.pageSize : 10,
-            });
+            setSeach({ ...search, page: pagination.current ? pagination.current : 1, pageSize: pagination.pageSize ? pagination.pageSize : 10 });
           }}
           onRow={(record, rowIndex) => ({
             onClick: () => {

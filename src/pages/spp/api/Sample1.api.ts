@@ -1,6 +1,6 @@
 import { axiosService } from '@/config/common.axios';
 import type { ApiResponse } from '@/type/common.type';
-import { Sample1ListPageRes, Sample1ListPageScheme, Sample1ListRes, Sample1ListScheme, Sample1SaveReq } from '../type/Sample1.type';
+import { Sample1ListPageRes, Sample1ListPageScheme, Sample1ListRes, Sample1ListScheme, Sample1ListSearchPageReq, Sample1SaveReq } from '../type/Sample1.type';
 
 export const Sample1Api = () => {
   const getGroupList = async (searchText: string) => {
@@ -8,12 +8,8 @@ export const Sample1Api = () => {
     return response.item;
   };
 
-  const getGroupListPage = async (searchText: string, page: number, pageSize: number) => {
-    const response = await axiosService().get<ApiResponse<Sample1ListPageRes>>(
-      '/sample/grp-list-page',
-      { params: { searchText: searchText, page: page, pageSize: pageSize } },
-      Sample1ListPageScheme,
-    );
+  const getGroupListPage = async (param: Sample1ListSearchPageReq) => {
+    const response = await axiosService().get<ApiResponse<Sample1ListPageRes>>('/sample/grp-list-page', { params: param }, Sample1ListPageScheme);
     return response.item;
   };
 

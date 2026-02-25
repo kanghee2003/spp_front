@@ -1,6 +1,6 @@
 import { Select, type SelectProps } from 'antd';
 
-type Primitive = string | number;
+type Primitive = string | number | null;
 type BaseProps<V extends Primitive> = Omit<SelectProps<V>, 'mode' | 'labelInValue' | 'value' | 'defaultValue' | 'onChange'> & {
   mode?: undefined;
   value?: V;

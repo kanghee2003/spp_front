@@ -1,7 +1,7 @@
 import axios, { type AxiosRequestConfig } from 'axios';
 import { ZodError, type ZodTypeAny } from 'zod';
 import qs from 'qs';
-import { ApiResponseSchema } from '@/type/common.type';
+import { ApiResponseScheme } from '@/type/common.type';
 
 export type ReqOptions = AxiosRequestConfig;
 
@@ -11,7 +11,7 @@ export const axiosService = () => {
 
     try {
       // schema는 "item" 스키마로 받고, 공통 응답(code/message/item)으로 감싸서 검증합니다.
-      return ApiResponseSchema(schema).parse(data) as T;
+      return ApiResponseScheme(schema).parse(data) as T;
     } catch (e) {
       if (e instanceof ZodError) {
         // react-query는 기본적으로 에러를 "보관"만 하고 화면에 던지지 않아서

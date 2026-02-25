@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import { Sample1Api } from '../api/Sample1.api';
-import { Sample1ListPageRes, Sample1ListRes } from '../type/Sample1.type';
+import { Sample1ListPageRes, Sample1ListRes, Sample1ListSearchPageReq } from '../type/Sample1.type';
 
 /**
  * NOTE
@@ -21,10 +21,10 @@ export const Sample1Service = () => {
     });
   };
 
-  const getGroupListPage = (searchText: string, page: number, pageSize: number) => {
+  const getGroupListPage = (param: Sample1ListSearchPageReq) => {
     return useQuery<Sample1ListPageRes>({
-      queryKey: ['SampleGetGroupListPage', searchText, page, pageSize],
-      queryFn: () => Sample1Api().getGroupListPage(searchText, page, pageSize),
+      queryKey: ['SampleGetGroupListPage', param],
+      queryFn: () => Sample1Api().getGroupListPage(param),
       enabled: false,
       select: (response: Sample1ListPageRes) => {
         return response;
