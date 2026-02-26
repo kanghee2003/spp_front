@@ -66,6 +66,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const tableRef = useRef<any>(null);
   const prevDataSourceRef = useRef<any>(null);
+  const autoClickRef = useRef(false);
   const pagingEnabled = props.pagination !== false;
   const initialPagination = typeof props.pagination === 'object' ? (props.pagination as TablePaginationConfig) : undefined;
 
@@ -94,8 +95,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
   });
   const [tableHeight, setTableHeight] = useState(800);
 
-  // ✅ 기존: 내부 선택 인덱스 유지
-  const [selectRowIndex, setSelectRowIndex] = useState<number | undefined>(0);
+  const [selectRowIndex, setSelectRowIndex] = useState<number | undefined>(undefined);
 
   const computedTotal = Array.isArray(props.dataSource) ? props.dataSource.length : 0;
   const computedPagination: TablePaginationConfig | false = pagingEnabled
@@ -108,7 +108,6 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       }
     : false;
 
-  // ===== 스크롤 관련 유틸 (선택/하이라이트 로직에는 손 안댐) =====
   const getRowKey = (row: any): Key | undefined => {
     const rk: any = (props as any).rowKey;
     if (typeof rk === 'function') return rk(row);
@@ -170,7 +169,6 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     return true;
   };
 
-  // ✅ 현재 선택된 row(내부 selectRowIndex)로 이동
   const scrollToFocusedRow = (opts?: { behavior?: ScrollBehaviorType }) => {
     const index = selectRowIndex;
     if (index === undefined || index === null) return false;
@@ -188,7 +186,6 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     return scrollTrNearest(found.body, found.tr, opts);
   };
 
-  // ✅ (추가) 특정 index(현재 페이지 기준) row로 이동
   const scrollToRowIndex = (index: number, opts?: { behavior?: ScrollBehaviorType }) => {
     const view = Array.isArray(targetDataSource) ? targetDataSource : [];
     const row = view[index];
@@ -203,13 +200,51 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     return scrollTrNearest(found.body, found.tr, opts);
   };
 
-  // ✅ (추가) 외부에서 선택(하이라이트) 자체를 바꾸고 싶을 때
   const selectRowIndexByRef = (index: number | undefined) => {
     setSelectRowIndex(index);
     return true;
   };
 
-  // ===== 기존 useImperativeHandle 유지 + 메서드만 추가 =====
+  const runRowClick = async (record: T, index: number | undefined) => {
+    if (index === undefined) return;
+
+    const userRow = (props.onRow?.(record, index) as any) ?? {};
+    const userOnClick = userRow?.onClick;
+
+    if (userOnClick) {
+      const result = await userOnClick();
+      if (result !== false && props.rowSelectedFlag) {
+        setSelectRowIndex(index);
+      }
+    } else if (props.rowSelectedFlag) {
+      setSelectRowIndex(index);
+    }
+  };
+
+  useEffect(() => {
+    if (!props.rowSelectedFlag) return;
+
+    const view = Array.isArray(targetDataSource) ? targetDataSource : [];
+    if (view.length === 0) return;
+
+    if (autoClickRef.current) return;
+    autoClickRef.current = true;
+
+    runRowClick(view[0], 0);
+  }, [props.rowSelectedFlag, targetDataSource]);
+
+  useEffect(() => {
+    autoClickRef.current = false;
+  }, [props.paginationResetKey]);
+
+  const setClassName = (record: any, index: number) => {
+    return index === props.selectedRowIndex ? 'selected-row' : '';
+  };
+
+  const setSelectedClassName = (record: any, index: number) => {
+    return index === selectRowIndex ? 'selected-row' : '';
+  };
+
   useImperativeHandle(
     ref,
     () => ({
@@ -222,6 +257,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
           pageEditFlag: true,
         }));
         setSelectRowIndex(undefined);
+        autoClickRef.current = false;
       },
       scrollToFocusedRow,
       scrollToRowIndex,
@@ -230,14 +266,6 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     }),
     [targetDataSource, selectRowIndex],
   );
-
-  const setClassName = (record: any, index: number) => {
-    return index === props.selectedRowIndex ? 'selected-row' : '';
-  };
-
-  const setSelectedClassName = (record: any, index: number) => {
-    return index === selectRowIndex ? 'selected-row' : '';
-  };
 
   useEffect(() => {
     const dataSourceChanged = prevDataSourceRef.current !== props.dataSource;
@@ -308,6 +336,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       pageEditFlag: true,
     }));
     setSelectRowIndex(undefined);
+    autoClickRef.current = false;
   }, [props.paginationResetKey]);
 
   useEffect(() => {
@@ -338,20 +367,13 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
             cell: SppEllipsisTooltipCell,
           },
         }}
-        onRow={(record, index) => ({
-          ...props.onRow,
-          onClick: async () => {
-            if (props.onRow && (props.onRow?.(record, index) as any).onClick) {
-              const result = await (props.onRow?.(record, index) as any).onClick();
-
-              if (result !== false && props.rowSelectedFlag) {
-                setSelectRowIndex(index);
-              }
-            } else if (props.rowSelectedFlag) {
-              setSelectRowIndex(index);
-            }
-          },
-        })}
+        onRow={(record, index) => {
+          const userRow = (props.onRow?.(record, index) as any) ?? {};
+          return {
+            ...userRow,
+            onClick: () => runRowClick(record, index),
+          };
+        }}
         columns={ellipsisColumns}
         dataSource={targetDataSource}
         pagination={computedPagination}
@@ -361,6 +383,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
             pageSize: pagination.pageSize ? pagination.pageSize : 10,
             pageEditFlag: true,
           });
+          autoClickRef.current = false;
           if (props?.onChange) props?.onChange(pagination, filters, sorter, extra);
         }}
         rowClassName={(record, index, indent) => (props.rowSelectedFlag ? setSelectedClassName(record, index) : setClassName(record, index))}
