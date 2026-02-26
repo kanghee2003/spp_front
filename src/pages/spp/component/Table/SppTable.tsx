@@ -17,6 +17,7 @@ interface CustomTableProps<T extends object = any> extends TableProps<T> {
   showIudIcon?: boolean;
   selectedRowIndex?: number;
   rowSelectedFlag?: boolean;
+  autoSelectFirstRow?: boolean;
   paginationResetKey?: any;
   pagenationFlag?: boolean;
 }
@@ -73,7 +74,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
   const targetColumns = useMemo(() => {
     const cols = props.columns as any[] | undefined;
 
-    if (props.rowNoFlag === true || props.rowNoDescFlag === true) {
+    if (props.rowNoFlag || props.rowNoDescFlag) {
       if (cols !== undefined && !hasColumnKey(cols, 'rowNo')) {
         return rowNoColumns.concat(cols as any);
       }
@@ -223,6 +224,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
 
   useEffect(() => {
     if (!props.rowSelectedFlag) return;
+    if (!props.autoSelectFirstRow) return;
 
     const view = Array.isArray(targetDataSource) ? targetDataSource : [];
     if (view.length === 0) return;
@@ -231,7 +233,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     autoClickRef.current = true;
 
     runRowClick(view[0], 0);
-  }, [props.rowSelectedFlag, targetDataSource]);
+  }, [props.rowSelectedFlag, props.autoSelectFirstRow, targetDataSource]);
 
   useEffect(() => {
     autoClickRef.current = false;
@@ -277,7 +279,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     const pageSize = paginationParam.pageSize;
     const start = pagingEnabled ? (page - 1) * pageSize : 0;
 
-    if (pagingEnabled && props.pagenationFlag !== true) {
+    if (pagingEnabled && !props.pagenationFlag) {
       const maxPage = Math.max(1, Math.ceil(source.length / pageSize));
       if (page > maxPage) {
         setPaginationParam({
@@ -289,9 +291,9 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       }
     }
 
-    const viewRows = pagingEnabled ? (props.pagenationFlag === true ? source : source.slice(start, start + pageSize)) : source;
+    const viewRows = pagingEnabled ? (props.pagenationFlag ? source : source.slice(start, start + pageSize)) : source;
 
-    if (props.rowNoFlag === true && viewRows.length > 0) {
+    if (props.rowNoFlag && viewRows.length > 0) {
       const array = [
         ...viewRows.map((item: any, idx: number) => {
           item['rowNo'] = start + (idx + 1);
@@ -300,7 +302,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       ];
       setTargetDataSource(array);
       setPaginationParam({ ...paginationParam, pageEditFlag: false });
-    } else if (props.rowNoDescFlag === true && viewRows.length > 0) {
+    } else if (props.rowNoDescFlag && viewRows.length > 0) {
       const totalCnt = computedPagination !== false && typeof computedPagination.total === 'number' ? computedPagination.total : source.length;
       const array = [
         ...viewRows.map((item: any, idx: number) => {

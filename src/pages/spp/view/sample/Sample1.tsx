@@ -303,6 +303,7 @@ const Sample1 = () => {
           pagination={{ total: groupPage?.totalCount ?? 0 }}
           rowSelection={rowSelection}
           rowSelectedFlag
+          autoSelectFirstRow
           onChange={(pagination) => {
             // 페이지 변경 시 서버에서 해당 페이지 데이터를 다시 조회
             setSelectedRowKeys([]);
