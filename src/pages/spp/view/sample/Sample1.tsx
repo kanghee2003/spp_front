@@ -168,6 +168,7 @@ const Sample1 = () => {
   };
 
   const handleSearch = (value: Sample1ListSearchReq) => {
+    console.log(tableRef.current?.getSelectedRowIndex());
     setSelectedRowKeys([]);
     setSeach({ ...search, searchText: value.searchText, page: 1 });
   };
