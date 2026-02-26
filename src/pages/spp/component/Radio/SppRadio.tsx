@@ -1,10 +1,12 @@
-import { Radio, RadioProps } from 'antd';
+import { Radio } from 'antd';
+import type { RadioGroupProps } from 'antd/es/radio';
+import { ReactNode } from 'react';
 
-export interface SppRadioProps extends RadioProps {
-  options?: { value: any; label: string }[];
+export interface SppRadioProps extends RadioGroupProps {
+  options?: { value: any; label: ReactNode }[];
 }
 
-const SppRadio = ({ name, options, ...props }: SppRadioProps) => {
+const SppRadio = ({ options, ...props }: SppRadioProps) => {
   return (
     <Radio.Group {...props}>
       {options &&

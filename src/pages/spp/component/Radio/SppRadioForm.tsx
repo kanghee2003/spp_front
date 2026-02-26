@@ -1,6 +1,5 @@
-import { Radio } from 'antd';
 import { Control, Controller } from 'react-hook-form';
-import { SppRadioProps } from './SppRadio';
+import SppRadio, { SppRadioProps } from './SppRadio';
 
 export interface SppRadioFormProps extends SppRadioProps {
   name: string;
@@ -14,28 +13,23 @@ const SppRadioForm = ({ name, control, defaultValue, options, ...props }: SppRad
       name={name}
       defaultValue={defaultValue}
       control={control}
-      render={({ field, fieldState }) => (
-        <Radio.Group {...props} id={field.name} name={field.name} value={field.value}>
-          {options &&
-            options.map((item) => {
-              return (
-                <Radio
-                  key={item.value}
-                  value={item.value}
-                  onChange={(v) => {
-                    field.onChange(v);
-                    props.onChange?.(v);
-                  }}
-                  onBlur={(v) => {
-                    field.onBlur();
-                    props.onBlur?.(v);
-                  }}
-                >
-                  {item.label}
-                </Radio>
-              );
-            })}
-        </Radio.Group>
+      render={({ field }) => (
+        <SppRadio
+          {...props}
+          id={props.id ?? field.name}
+          name={field.name}
+          options={options}
+          value={field.value}
+          onChange={(e) => {
+            const nextValue = (e as any)?.target?.value;
+            field.onChange(nextValue);
+            props.onChange?.(e as any);
+          }}
+          onBlur={(e) => {
+            field.onBlur();
+            props.onBlur?.(e as any);
+          }}
+        />
       )}
     />
   );
