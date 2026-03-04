@@ -25,7 +25,7 @@ import { IudType } from '../../../../type/common.type';
 
 const Sample1 = () => {
   const alertFormErrors = useAlertFormErrors();
-  const [search, setSeach] = useState<Sample1ListSearchPageReq | null>({ page: 1, pageSize: 10 });
+  const [search, setSeach] = useState<Sample1ListSearchPageReq>({ page: 1, pageSize: 10, searchText: '' });
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const tableRef = useRef<any>(null);
 
@@ -57,7 +57,6 @@ const Sample1 = () => {
 
   const {
     fields: saveFormFields,
-    prepend: saveFormPrepend,
     append: saveFormAppend,
     update: saveFormUpdate,
     remove: saveFormRemove,
@@ -70,13 +69,13 @@ const Sample1 = () => {
   const saveQuery = Sample1Service().save();
 
   /* ============================================== TEMPLATE ============================================== */
-  const defaultSaveValue = {
+  const createDefaultSaveValue = () => ({
     uuid: crypto.randomUUID(),
     cmGrpCd: '',
     cmGrpNm: '',
     useFlag: true,
     iudType: IudType.I,
-  };
+  });
 
   const rowSelection: TableRowSelection<Sample1Res> = {
     selectedRowKeys,
@@ -170,7 +169,7 @@ const Sample1 = () => {
   const handleSearch = (value: Sample1ListSearchReq) => {
     console.log(tableRef.current?.getSelectedRowIndex());
     setSelectedRowKeys([]);
-    setSeach({ ...search, searchText: value.searchText, page: 1 });
+    setSeach((prev) => ({ ...prev, searchText: value.searchText, page: 1 }));
   };
 
   const handleSave = () => {
@@ -181,8 +180,8 @@ const Sample1 = () => {
     });
   };
 
-  const handlePrepend = () => {
-    saveFormPrepend(defaultSaveValue);
+  const handleAppend = () => {
+    saveFormAppend(createDefaultSaveValue() as any);
   };
 
   const handleRemoveRow = () => {
@@ -282,7 +281,7 @@ const Sample1 = () => {
         title="목록"
         extra={
           <Space wrap>
-            <SppButton type="default" htmlType="button" icon={<SaveOutlined />} onClick={handlePrepend}>
+            <SppButton type="default" htmlType="button" icon={<SaveOutlined />} onClick={handleAppend}>
               행추가
             </SppButton>
 
@@ -300,14 +299,19 @@ const Sample1 = () => {
           paginationFlag
           columns={columns}
           dataSource={saveFormFields}
-          pagination={{ total: groupPage?.totalCount ?? 0 }}
+          pagination={{ current: search.page, pageSize: search.pageSize, total: groupPage?.totalCount ?? 0 }}
           rowSelection={rowSelection}
           rowSelectedFlag
           autoSelectFirstRow
           onChange={(pagination) => {
             // 페이지 변경 시 서버에서 해당 페이지 데이터를 다시 조회
             setSelectedRowKeys([]);
-            setSeach({ ...search, page: pagination.current ? pagination.current : 1, pageSize: pagination.pageSize ? pagination.pageSize : 10 });
+
+            setSeach((prev) => ({
+              ...prev,
+              page: pagination.current ? pagination.current : 1,
+              pageSize: prev.pageSize,
+            }));
           }}
           onRow={(record, rowIndex) => ({
             onClick: () => {

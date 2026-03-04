@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const makePageReqScheme = <T extends z.ZodObject<any>>(searchScheme: T) =>
+export const makePageReqScheme = <S extends z.ZodRawShape>(searchScheme: z.ZodObject<S>) =>
   searchScheme
     .merge(
       z.object({

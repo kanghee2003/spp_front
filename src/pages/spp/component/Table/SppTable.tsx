@@ -3,7 +3,7 @@ import type { Key, ReactElement } from 'react';
 
 import { IudType } from '@/type/common.type';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, PlusCircleOutlined } from '@ant-design/icons';
-import { Table } from 'antd';
+import { Pagination, Table } from 'antd';
 import type { TablePaginationConfig, TableProps } from 'antd';
 import { ColumnsType } from 'antd/es/table';
 
@@ -11,7 +11,8 @@ import { SppEllipsisTooltipCell, withEllipsisNoTitle } from './SppTableEllipsisT
 
 type ScrollBehaviorType = 'auto' | 'instant' | 'smooth';
 
-interface SppTableProps<T extends object = any> extends TableProps<T> {
+interface SppTableProps<T extends object = any> extends Omit<TableProps<T>, 'pagination'> {
+  pagination?: false | TablePaginationConfig;
   rowNoFlag?: boolean;
   rowNoDescFlag?: boolean;
   showIudIcon?: boolean;
@@ -68,8 +69,11 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
   const tableRef = useRef<any>(null);
   const prevDataSourceRef = useRef<any>(null);
   const autoClickRef = useRef(false);
+
   const pagingEnabled = props.pagination !== false;
   const initialPagination = typeof props.pagination === 'object' ? (props.pagination as TablePaginationConfig) : undefined;
+
+  const isServerPaging = !!props.paginationFlag && pagingEnabled;
 
   const targetColumns = useMemo(() => {
     const cols = props.columns as any[] | undefined;
@@ -99,15 +103,40 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
   const [selectRowIndex, setSelectRowIndex] = useState<number | undefined>(-1);
 
   const computedTotal = Array.isArray(props.dataSource) ? props.dataSource.length : 0;
-  const computedPagination: TablePaginationConfig | false = pagingEnabled
-    ? {
-        ...(initialPagination ?? {}),
-        current: paginationParam.page,
-        pageSize: paginationParam.pageSize,
-        total: initialPagination?.total ?? computedTotal,
-        showSizeChanger: true,
-      }
-    : false;
+
+  const totalCount = typeof initialPagination?.total === 'number' ? initialPagination.total : computedTotal;
+
+  // 서버 페이징에서는 Table 내부 pagination을 끄고(Pagination UI는 별도 렌더)
+  //    - Table 내부 pagination을 켜두면 pageSize 기준으로 슬라이싱이 발생해서 append가 "안 보이는" 문제가 생김
+  //    - pageSize를 억지로 늘리면 total/pageSize 계산 때문에 페이지(2번)가 사라지는 문제가 생김
+  const computedPagination: TablePaginationConfig | false = isServerPaging
+    ? false
+    : pagingEnabled
+      ? {
+          ...(initialPagination ?? {}),
+          current: paginationParam.page,
+          pageSize: paginationParam.pageSize,
+          total: totalCount,
+          showSizeChanger: true,
+        }
+      : false;
+
+  useEffect(() => {
+    if (!pagingEnabled) return;
+
+    const nextPage = initialPagination?.current ?? 1;
+    const nextPageSize = initialPagination?.pageSize ?? 10;
+
+    setPaginationParam((prev) => {
+      if (prev.page === nextPage && prev.pageSize === nextPageSize) return prev;
+      return {
+        ...prev,
+        page: nextPage,
+        pageSize: nextPageSize,
+        pageEditFlag: true,
+      };
+    });
+  }, [pagingEnabled, initialPagination?.current, initialPagination?.pageSize]);
 
   const getRowKey = (row: any): Key | undefined => {
     const rk: any = (props as any).rowKey;
@@ -303,7 +332,7 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
       setTargetDataSource(array);
       setPaginationParam({ ...paginationParam, pageEditFlag: false });
     } else if (props.rowNoDescFlag && viewRows.length > 0) {
-      const totalCnt = computedPagination !== false && typeof computedPagination.total === 'number' ? computedPagination.total : source.length;
+      const totalCnt = totalCount;
       const array = [
         ...viewRows.map((item: any, idx: number) => {
           item['rowNo'] = totalCnt - (start + idx);
@@ -325,8 +354,7 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
     props.rowNoFlag,
     props.rowNoDescFlag,
     pagingEnabled,
-    computedTotal,
-    initialPagination?.total,
+    totalCount,
   ]);
 
   useEffect(() => {
@@ -354,6 +382,32 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  const renderServerPagination = () => {
+    if (!isServerPaging) return null;
+
+    const current = initialPagination?.current ?? paginationParam.page ?? 1;
+    const pageSize = initialPagination?.pageSize ?? paginationParam.pageSize ?? 10;
+    const total = totalCount;
+
+    return (
+      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
+        <Pagination
+          current={current}
+          pageSize={pageSize}
+          total={total}
+          showSizeChanger={false}
+          onChange={(page) => {
+            setPaginationParam((prev) => ({ ...prev, page, pageEditFlag: true }));
+            autoClickRef.current = false;
+
+            const p = { ...(initialPagination ?? {}), current: page, pageSize, total } as TablePaginationConfig;
+            if (props?.onChange) props?.onChange(p, {}, {}, { action: 'paginate', currentDataSource: [] } as any);
+          }}
+        />
+      </div>
+    );
+  };
+
   return (
     <div ref={wrapRef}>
       <Table<T>
@@ -380,18 +434,22 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
         dataSource={targetDataSource}
         pagination={computedPagination}
         onChange={(pagination, filters, sorter, extra) => {
-          setPaginationParam({
-            page: pagination.current ? pagination.current : 1,
-            pageSize: pagination.pageSize ? pagination.pageSize : 10,
-            pageEditFlag: true,
-          });
-          autoClickRef.current = false;
+          if (!isServerPaging) {
+            setPaginationParam({
+              page: pagination.current ? pagination.current : 1,
+              pageSize: pagination.pageSize ? pagination.pageSize : 10,
+              pageEditFlag: true,
+            });
+            autoClickRef.current = false;
+          }
           if (props?.onChange) props?.onChange(pagination, filters, sorter, extra);
         }}
         rowClassName={(record, index, indent) => (props.rowSelectedFlag ? setSelectedClassName(record, index) : setClassName(record, index))}
       >
         {props.children}
       </Table>
+
+      {renderServerPagination()}
     </div>
   );
 }) as <T extends object = any>(props: SppTableProps<T> & { ref?: any }) => ReactElement;
