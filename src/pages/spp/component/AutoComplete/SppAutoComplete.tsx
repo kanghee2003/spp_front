@@ -186,7 +186,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
     return () => {
       cancelled = true;
     };
-  }, [props.value, mode, searchValue]);
+  }, [props.value, mode]);
 
   // 검색어가 바뀌면 드롭다운 스크롤을 첫 항목으로 올림 (searchValue 기준)
   useEffect(() => {
