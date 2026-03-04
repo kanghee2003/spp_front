@@ -156,7 +156,8 @@ const ComponentSample = () => {
           <Col span={6}>
             <SppSelectForm
               name="select"
-              defaultValue={'jack'}
+              defaultValue={''}
+              allOptionFlag
               style={{ width: 120 }}
               control={sampleControl}
               placeholder="Select a person"
