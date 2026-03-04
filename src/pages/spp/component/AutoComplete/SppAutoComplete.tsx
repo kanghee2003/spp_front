@@ -109,6 +109,14 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
     const raw = props.value;
     if (raw === undefined || raw === null) return;
 
+    if (raw === undefined || raw === null || String(raw).trim().length === 0) {
+      lastSyncedKeyRef.current = null;
+      setDisplayValue('');
+      setSearchValue('');
+      setOpen(false);
+      return;
+    }
+
     const key = String(raw).trim();
     if (key.length === 0) return;
 
@@ -179,7 +187,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
     return () => {
       cancelled = true;
     };
-  }, [props.value, mode]);
+  }, [props.value, mode, searchValue]);
 
   // 검색어가 바뀌면 드롭다운 스크롤을 첫 항목으로 올림 (searchValue 기준)
   useEffect(() => {
@@ -243,7 +251,11 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
         // 검색어는 비워서 불필요한 재조회 방지
         setSearchValue('');
 
-        if (keyValue !== undefined) props.onChange?.(keyValue);
+        if (keyValue !== undefined) {
+          lastSyncedKeyRef.current = String(keyValue);
+          props.onChange?.(keyValue);
+        }
+
         props.onSelect?.(pickedDisplayValue, picked);
       }}
       onChange={(v) => {
@@ -287,7 +299,10 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
         setSearchValue('');
 
         // RHF에는 keyValue만 전달
-        if (keyValue !== undefined) props.onChange?.(keyValue);
+        if (keyValue !== undefined) {
+          lastSyncedKeyRef.current = String(keyValue);
+          props.onChange?.(keyValue);
+        }
 
         props.onSelect?.(val, option);
       }}

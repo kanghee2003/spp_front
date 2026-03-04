@@ -1,241 +1,197 @@
-import React, { useMemo, useState } from 'react';
-import { Tabs, Tree, Form, Input, Radio, Button, Space, Card, Divider, Typography, message, List } from 'antd';
-import type { DataNode } from 'antd/es/tree';
-import { useMdiContext } from '@/hook/useMdiContext';
+import { Badge, Button, Calendar, List, Modal, Space, Typography } from 'antd';
+import type { CalendarProps } from 'antd';
+import dayjs, { Dayjs } from 'dayjs';
+import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 const { Text } = Typography;
 
-type MenuItem = {
+export type DashboardScheduleType = 'MEETING' | 'DEPLOY' | 'ETC';
+
+export interface DashboardSchedule {
   id: string;
-  parentId?: string | null;
-  name: string;
-  path?: string;
-  cssClass?: string;
-  actionId?: string;
-  useYn: 'Y' | 'N';
-  sortNo?: number;
-  remark?: string;
-  type: 'MENU' | 'MYMENU';
-};
-
-// ---- mock 데이터 ----
-const mockMenus: MenuItem[] = [
-  { id: 'M1', parentId: null, name: '통합결재목록', path: '/appr/list', useYn: 'Y', type: 'MENU', sortNo: 1 },
-  { id: 'M1-1', parentId: 'M1', name: '결재함', path: '/appr/box', useYn: 'Y', type: 'MENU', sortNo: 1 },
-  { id: 'M1-2', parentId: 'M1', name: '기안함', path: '/appr/draft', useYn: 'Y', type: 'MENU', sortNo: 2 },
-  { id: 'M2', parentId: null, name: '정보보호', path: '/sec', useYn: 'Y', type: 'MENU', sortNo: 2 },
-  { id: 'M2-1', parentId: 'M2', name: '점검', path: '/sec/audit', useYn: 'N', type: 'MENU', sortNo: 1 },
-];
-
-const mockMyMenuList: MenuItem[] = [
-  { id: 'MY1', parentId: null, name: '정보보안', path: '/sec/info', useYn: 'Y', type: 'MYMENU', sortNo: 1 },
-  { id: 'MY2', parentId: null, name: '문서반출 시스템', path: '/sec/docout', useYn: 'Y', type: 'MYMENU', sortNo: 2 },
-  { id: 'MY3', parentId: null, name: '개인정보 관리시스템', path: '/sec/privacy', useYn: 'Y', type: 'MYMENU', sortNo: 3 },
-  { id: 'MY4', parentId: null, name: '영상정보기기 관리시스템', path: '/sec/cctv', useYn: 'N', type: 'MYMENU', sortNo: 4 },
-];
-
-// ---- 유틸: 평면 리스트 -> Tree Data ----
-function buildTree(nodes: MenuItem[]): DataNode[] {
-  const byParent = new Map<string | null, MenuItem[]>();
-  for (const n of nodes) {
-    const key = n.parentId ?? null;
-    if (!byParent.has(key)) byParent.set(key, []);
-    byParent.get(key)!.push(n);
-  }
-
-  const make = (parentId: string | null): DataNode[] => {
-    const children = (byParent.get(parentId) ?? []).sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0));
-    return children.map((c) => ({
-      key: c.id,
-      title: c.name,
-      children: make(c.id),
-    }));
-  };
-
-  return make(null);
+  date: string; // 'YYYY-MM-DD'
+  title: string;
+  type?: DashboardScheduleType;
+  time?: string; // 'HH:mm' (optional)
 }
 
-export default function MenuManagePage() {
-  const mdi = useMdiContext();
-  const [activeKey, setActiveKey] = useState<'tab1' | 'tab2'>('tab1');
+function getMonthKey(value: Dayjs) {
+  return value.format('YYYY-MM');
+}
 
-  const treeData = useMemo(() => buildTree(mockMenus), []);
-  const [selected, setSelected] = useState<MenuItem | null>(null);
-  const formEnabled = !!selected;
+/**
+ * ✅ 여기만 실제 API로 교체하세요.
+ * - value는 현재 패널(월) 기준 날짜
+ * - 반환은 그 달의 일정 전체 (YYYY-MM-DD 단위로 date를 채워서)
+ */
+async function fetchMonthSchedules(value: Dayjs): Promise<DashboardSchedule[]> {
+  const ym = value.format('YYYY-MM');
 
-  const [form] = Form.useForm<MenuItem>();
+  // demo data
+  const demo: DashboardSchedule[] = [
+    { id: '1', date: `${ym}-02`, title: '정기회의', type: 'MEETING', time: '10:00' },
+    { id: '2', date: `${ym}-02`, title: '권한 배포', type: 'DEPLOY', time: '19:30' },
+    { id: '3', date: `${ym}-07`, title: '점검', type: 'ETC' },
+    { id: '4', date: `${ym}-15`, title: '리뷰', type: 'MEETING' },
+    { id: '5', date: `${ym}-15`, title: '사전 리허설', type: 'ETC' },
+    { id: '6', date: `${ym}-15`, title: '운영 배포', type: 'DEPLOY' },
+  ];
 
-  const selectItem = (item: MenuItem) => {
-    setSelected(item);
-    form.setFieldsValue(item);
-  };
+  await new Promise((r) => setTimeout(r, 200));
+  return demo;
+}
 
-  const onTreeSelect = (keys: React.Key[]) => {
-    const id = String(keys?.[0] ?? '');
-    if (!id) return;
+function toBadgeStatus(type?: DashboardScheduleType): 'processing' | 'success' | 'default' | 'warning' | 'error' {
+  switch (type) {
+    case 'MEETING':
+      return 'processing';
+    case 'DEPLOY':
+      return 'success';
+    default:
+      return 'default';
+  }
+}
 
-    const found = mockMenus.find((m) => m.id === id);
-    if (!found) return;
+function formatItem(item: DashboardSchedule) {
+  if (!item.time) return item.title;
+  return `${item.time} ${item.title}`;
+}
 
-    selectItem(found);
-  };
+export interface DashboardScheduleCalendarProps {
+  title?: string;
+  height?: number;
+  onAddClick?: (date: string) => void; // 날짜별 "추가" 버튼 훅
+  onItemClick?: (item: DashboardSchedule) => void; // 일정 클릭 훅
+}
 
-  const onNew = () => {
-    const empty: MenuItem = {
-      id: '',
-      parentId: null,
-      name: '',
-      path: '',
-      cssClass: '',
-      actionId: '',
-      useYn: 'Y',
-      sortNo: 1,
-      remark: '',
-      type: activeKey === 'tab1' ? 'MENU' : 'MYMENU',
-    };
-    setSelected(empty);
-    form.setFieldsValue(empty);
-  };
+export default function DashboardScheduleCalendar({ title = '일정', height = 360, onAddClick, onItemClick }: DashboardScheduleCalendarProps) {
+  const [panelValue, setPanelValue] = useState<Dayjs>(() => dayjs());
+  const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
 
-  const onSave = async () => {
-    try {
-      const values = await form.validateFields();
-      message.success(`저장(샘플): ${values.name}`);
-      setSelected(values);
-    } catch {
-      // validation error
+  const monthKey = useMemo(() => getMonthKey(panelValue), [panelValue]);
+
+  const { data: monthSchedules = [], isFetching } = useQuery({
+    queryKey: ['dashboardSchedules', monthKey],
+    queryFn: () => fetchMonthSchedules(panelValue),
+    staleTime: 1000 * 60 * 3,
+    gcTime: 1000 * 60 * 10,
+  });
+
+  const eventMap = useMemo(() => {
+    const map: Record<string, DashboardSchedule[]> = {};
+    for (const e of monthSchedules) {
+      if (!map[e.date]) map[e.date] = [];
+      map[e.date].push(e);
     }
-  };
+    Object.keys(map).forEach((k) => {
+      map[k].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    });
+    return map;
+  }, [monthSchedules]);
 
-  const onDelete = () => {
-    if (!selected?.id) return message.info('새 항목은 삭제할 수 없어요.');
-    message.success(`삭제(샘플): ${selected.name}`);
-    setSelected(null);
-    form.resetFields();
-  };
+  const selectedKey = selectedDate ? selectedDate.format('YYYY-MM-DD') : '';
+  const selectedEvents = selectedKey ? eventMap[selectedKey] || [] : [];
 
-  const RightForm = (
-    <Card
-      size="small"
-      title="메뉴 정보"
-      extra={
-        <Space>
-          <Button onClick={onNew}>신규</Button>
-          <Button type="primary" onClick={onSave} disabled={!formEnabled}>
-            저장
-          </Button>
-          <Button danger onClick={onDelete} disabled={!formEnabled}>
-            삭제
-          </Button>
+  const dateCellRender: CalendarProps<Dayjs>['dateCellRender'] = (value) => {
+    const key = value.format('YYYY-MM-DD');
+    const list = eventMap[key] || [];
+    if (list.length === 0) return null;
+
+    const visible = list.slice(0, 2);
+    const remain = list.length - visible.length;
+
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Space size={6} wrap>
+          {list.slice(0, 3).map((it) => (
+            <Badge key={it.id} status={toBadgeStatus(it.type)} />
+          ))}
         </Space>
-      }
-      style={{ height: '100%' }}
-      styles={{ body: { height: 'calc(100% - 56px)', overflow: 'auto' } }}
-    >
-      {!formEnabled && (
-        <>
-          <Text type="secondary">왼쪽에서 항목을 선택하면 오른쪽 상세 정보가 표시돼요.</Text>
-          <Divider />
-        </>
-      )}
 
-      <Form form={form} layout="horizontal" labelCol={{ span: 6 }} wrapperCol={{ span: 18 }} disabled={!formEnabled}>
-        <Form.Item label="ID" name="id">
-          <Input placeholder="(신규는 비워둠)" />
-        </Form.Item>
+        {visible.map((it) => (
+          <Text key={it.id} ellipsis style={{ fontSize: 11, display: 'block' }} title={formatItem(it)}>
+            {formatItem(it)}
+          </Text>
+        ))}
 
-        <Form.Item label="메뉴명" name="name" rules={[{ required: true, message: '메뉴명을 입력하세요.' }]}>
-          <Input />
-        </Form.Item>
+        {remain > 0 && <Text style={{ fontSize: 11, opacity: 0.6 }}>{`+${remain} more`}</Text>}
+      </div>
+    );
+  };
 
-        <Form.Item label="URL" name="path">
-          <Input />
-        </Form.Item>
+  const headerRender: CalendarProps<Dayjs>['headerRender'] = ({ value }) => {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: 8 }}>
+        <Space>
+          <Text strong>{title}</Text>
+          <Text type="secondary">{value.format('YYYY년 MM월')}</Text>
+          {isFetching && <Text type="secondary">조회중…</Text>}
+        </Space>
 
-        <Form.Item label="cssClass" name="cssClass">
-          <Input />
-        </Form.Item>
+        <Button size="small" onClick={() => setPanelValue(dayjs())}>
+          오늘
+        </Button>
+      </div>
+    );
+  };
 
-        <Form.Item label="actionId" name="actionId">
-          <Input />
-        </Form.Item>
+  const handleSelect: CalendarProps<Dayjs>['onSelect'] = (date) => {
+    setSelectedDate(date);
+  };
 
-        <Form.Item label="사용여부" name="useYn">
-          <Radio.Group>
-            <Radio value="Y">사용(Y)</Radio>
-            <Radio value="N">미사용(N)</Radio>
-          </Radio.Group>
-        </Form.Item>
-
-        <Form.Item label="비고" name="remark">
-          <Input.TextArea rows={4} />
-        </Form.Item>
-      </Form>
-    </Card>
-  );
-
-  // 1탭: 트리 + 폼
-  const Tab1 = (
-    <div style={{ display: 'flex', gap: 12, height: 'calc(100vh - 160px)' }}>
-      <Card size="small" title="메뉴목록" style={{ width: 360, height: '100%' }} styles={{ body: { height: 'calc(100% - 56px)', overflow: 'auto' } }}>
-        <Tree treeData={treeData} defaultExpandAll onSelect={onTreeSelect} selectedKeys={selected?.id ? [selected.id] : []} />
-      </Card>
-
-      <div style={{ flex: 1, minWidth: 520, height: '100%' }}>{RightForm}</div>
-    </div>
-  );
-
-  //  2탭: 왼쪽 "목록(List)" + 오른쪽 폼 (클릭하면 상세 표시)
-  const Tab2 = (
-    <div style={{ display: 'flex', gap: 12, height: 'calc(100vh - 160px)' }}>
-      <Card size="small" title="마이메뉴 목록" style={{ width: 360, height: '100%' }} styles={{ body: { height: 'calc(100% - 56px)', overflow: 'auto' } }}>
-        <List
-          size="small"
-          dataSource={[...mockMyMenuList].sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0))}
-          renderItem={(item) => {
-            const isActive = selected?.id === item.id;
-            return (
-              <List.Item
-                style={{
-                  cursor: 'pointer',
-                  padding: '8px 10px',
-                  borderRadius: 6,
-                  marginBottom: 4,
-                  background: isActive ? 'rgba(22,119,255,0.12)' : undefined,
-                  border: isActive ? '1px solid rgba(22,119,255,0.35)' : '1px solid transparent',
-                }}
-                onClick={() => selectItem(item)}
-              >
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <span style={{ fontWeight: 600 }}>{item.name}</span>
-                  <Text type="secondary" style={{ fontSize: 12 }}>
-                    {item.path} · 사용:{item.useYn}
-                  </Text>
-                </div>
-              </List.Item>
-            );
-          }}
-        />
-      </Card>
-
-      <div style={{ flex: 1, minWidth: 520, height: '100%' }}>{RightForm}</div>
-    </div>
-  );
+  const handlePanelChange: CalendarProps<Dayjs>['onPanelChange'] = (value) => {
+    setPanelValue(value);
+  };
 
   return (
-    <Card size="small" style={{ width: '100%' }}>
-      <Tabs
-        activeKey={activeKey}
-        onChange={(k) => {
-          setActiveKey(k as 'tab1' | 'tab2');
-          // 탭 이동 시 선택 유지/초기화는 정책에 따라 조절 가능
-        }}
-        items={[
-          { key: 'tab1', label: '메뉴관리', children: Tab1 },
-          { key: 'tab2', label: '마이메뉴관리', children: Tab2 },
-        ]}
-      />
-      <pre style={{ margin: 0, whiteSpace: 'pre-wrap' }}>{JSON.stringify({ viewKey: mdi.viewKey, tabKey: mdi.tabKey, params: mdi.params }, null, 2)}</pre>
-    </Card>
+    <>
+      <div style={{ height, overflow: 'hidden' }}>
+        <Calendar
+          value={panelValue}
+          fullscreen={true}
+          headerRender={headerRender}
+          dateCellRender={dateCellRender}
+          onSelect={handleSelect}
+          onPanelChange={handlePanelChange}
+        />
+      </div>
+
+      <Modal
+        open={!!selectedDate}
+        title={selectedDate ? selectedDate.format('YYYY-MM-DD') : ''}
+        onCancel={() => setSelectedDate(null)}
+        footer={
+          <Space>
+            <Button onClick={() => setSelectedDate(null)}>닫기</Button>
+            <Button
+              type="primary"
+              onClick={() => {
+                if (!selectedDate) return;
+                onAddClick?.(selectedDate.format('YYYY-MM-DD'));
+              }}
+            >
+              일정 추가
+            </Button>
+          </Space>
+        }
+      >
+        {selectedEvents.length === 0 ? (
+          <Text type="secondary">등록된 일정이 없습니다.</Text>
+        ) : (
+          <List
+            dataSource={selectedEvents}
+            renderItem={(item) => (
+              <List.Item style={{ cursor: onItemClick ? 'pointer' : 'default' }} onClick={() => onItemClick?.(item)}>
+                <Space>
+                  <Badge status={toBadgeStatus(item.type)} />
+                  <Text>{formatItem(item)}</Text>
+                </Space>
+              </List.Item>
+            )}
+          />
+        )}
+      </Modal>
+    </>
   );
 }

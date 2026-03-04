@@ -11,7 +11,7 @@ const SppAutoCompleteForm = ({ name, control, ...props }: SppAutoCompleteFormPro
     <Controller
       name={name}
       control={control}
-      render={({ field, fieldState }) => (
+      render={({ field }) => (
         <SppAutoComplete
           {...props}
           value={field.value}

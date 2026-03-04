@@ -11,7 +11,7 @@ import { SppEllipsisTooltipCell, withEllipsisNoTitle } from './SppTableEllipsisT
 
 type ScrollBehaviorType = 'auto' | 'instant' | 'smooth';
 
-interface CustomTableProps<T extends object = any> extends TableProps<T> {
+interface SppTableProps<T extends object = any> extends TableProps<T> {
   rowNoFlag?: boolean;
   rowNoDescFlag?: boolean;
   showIudIcon?: boolean;
@@ -19,10 +19,10 @@ interface CustomTableProps<T extends object = any> extends TableProps<T> {
   rowSelectedFlag?: boolean;
   autoSelectFirstRow?: boolean;
   paginationResetKey?: any;
-  pagenationFlag?: boolean;
+  paginationFlag?: boolean;
 }
 
-interface CustomPageParam {
+interface SppPageParam {
   page: number;
   pageSize: number;
   pageEditFlag: boolean;
@@ -30,11 +30,11 @@ interface CustomPageParam {
 
 const rowNoColumns: ColumnsType<any> = [
   {
-    title: 'NO',
+    title: '순번',
     dataIndex: 'rowNo',
     key: 'rowNo',
     align: 'center',
-    width: '45px',
+    width: '60px',
   },
 ];
 
@@ -46,7 +46,7 @@ export const IUD_COLUMN: any = {
   key: 'iudType',
   align: 'center',
   width: '40px',
-  render: (value: IudType, row: any) => {
+  render: (value: IudType) => {
     if (value === IudType.I) return <PlusCircleOutlined />;
     if (value === IudType.U) return <CheckCircleOutlined />;
     if (value === IudType.D) return <DeleteOutlined />;
@@ -63,7 +63,7 @@ function hasColumnKey(columns: any[] | undefined, key: string) {
     .includes(key as any);
 }
 
-const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>, ref: any) => {
+const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, ref: any) => {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const tableRef = useRef<any>(null);
   const prevDataSourceRef = useRef<any>(null);
@@ -89,14 +89,14 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
   }, [targetColumns]);
 
   const [targetDataSource, setTargetDataSource] = useState<any>();
-  const [paginationParam, setPaginationParam] = useState<CustomPageParam>({
+  const [paginationParam, setPaginationParam] = useState<SppPageParam>({
     page: pagingEnabled && initialPagination?.current ? initialPagination.current : 1,
     pageSize: pagingEnabled && initialPagination?.pageSize ? initialPagination.pageSize : 10,
     pageEditFlag: true,
   });
   const [tableHeight, setTableHeight] = useState(800);
 
-  const [selectRowIndex, setSelectRowIndex] = useState<number | undefined>(undefined);
+  const [selectRowIndex, setSelectRowIndex] = useState<number | undefined>(-1);
 
   const computedTotal = Array.isArray(props.dataSource) ? props.dataSource.length : 0;
   const computedPagination: TablePaginationConfig | false = pagingEnabled
@@ -258,7 +258,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
           page: 1,
           pageEditFlag: true,
         }));
-        setSelectRowIndex(undefined);
+        setSelectRowIndex(-1);
         autoClickRef.current = false;
       },
       scrollToFocusedRow,
@@ -279,7 +279,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     const pageSize = paginationParam.pageSize;
     const start = pagingEnabled ? (page - 1) * pageSize : 0;
 
-    if (pagingEnabled && !props.pagenationFlag) {
+    if (pagingEnabled && !props.paginationFlag) {
       const maxPage = Math.max(1, Math.ceil(source.length / pageSize));
       if (page > maxPage) {
         setPaginationParam({
@@ -291,7 +291,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       }
     }
 
-    const viewRows = pagingEnabled ? (props.pagenationFlag ? source : source.slice(start, start + pageSize)) : source;
+    const viewRows = pagingEnabled ? (props.paginationFlag ? source : source.slice(start, start + pageSize)) : source;
 
     if (props.rowNoFlag && viewRows.length > 0) {
       const array = [
@@ -318,7 +318,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
     }
   }, [
     props.dataSource,
-    props.pagenationFlag,
+    props.paginationFlag,
     paginationParam.pageEditFlag,
     paginationParam.page,
     paginationParam.pageSize,
@@ -337,7 +337,7 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       page: 1,
       pageEditFlag: true,
     }));
-    setSelectRowIndex(undefined);
+    setSelectRowIndex(-1);
     autoClickRef.current = false;
   }, [props.paginationResetKey]);
 
@@ -394,6 +394,6 @@ const SppTable = forwardRef(<T extends object = any>(props: CustomTableProps<T>,
       </Table>
     </div>
   );
-}) as <T extends object = any>(props: CustomTableProps<T> & { ref?: any }) => ReactElement;
+}) as <T extends object = any>(props: SppTableProps<T> & { ref?: any }) => ReactElement;
 
 export default SppTable;

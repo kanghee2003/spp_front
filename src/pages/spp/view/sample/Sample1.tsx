@@ -297,7 +297,7 @@ const Sample1 = () => {
           ref={tableRef}
           rowKey="uuid"
           rowNoFlag
-          pagenationFlag
+          paginationFlag
           columns={columns}
           dataSource={saveFormFields}
           pagination={{ total: groupPage?.totalCount ?? 0 }}
