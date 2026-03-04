@@ -107,7 +107,6 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
    */
   useEffect(() => {
     const raw = props.value;
-    if (raw === undefined || raw === null) return;
 
     if (raw === undefined || raw === null || String(raw).trim().length === 0) {
       lastSyncedKeyRef.current = null;
