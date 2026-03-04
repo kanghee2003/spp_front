@@ -12,7 +12,7 @@ export default defineConfig(({ mode }) => {
 
   const env = loadEnv(mode, root, 'VITE_');
 
-  const usingGw = toBool(env.VITE_USING_GW);
+  const usingGw = toBool(env.VITE_USING_GATEWAY);
   const gw = normalize(env.VITE_GW_BASE_URL);
   const api = normalize(env.VITE_API_BASE_URL);
 
