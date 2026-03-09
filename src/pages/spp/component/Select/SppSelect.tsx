@@ -1,7 +1,7 @@
 import { Select, type SelectProps } from 'antd';
 import { useMemo } from 'react';
 
-type Primitive = string | number | null;
+type Primitive = string | null;
 
 type BaseProps<V extends Primitive> = Omit<SelectProps<V>, 'mode' | 'labelInValue' | 'allowClear' | 'value' | 'defaultValue' | 'onChange'> & {
   mode?: never;
@@ -12,7 +12,6 @@ type BaseProps<V extends Primitive> = Omit<SelectProps<V>, 'mode' | 'labelInValu
   defaultValue?: V;
   onChange?: (value: V, option: unknown) => void;
 
-  // 전체 옵션
   allOptionFlag?: boolean;
   allOptionLabel?: string;
   allOptionValue?: V;
@@ -30,14 +29,21 @@ const SppSelect = <V extends Primitive = any>(props: SppSelectProps<V>) => {
 
   const { allOptionFlag = false, allOptionLabel = '전체', allOptionValue = '' as V, options, ...rest } = props;
 
+  const normalizedOptions = useMemo(() => {
+    return (options ?? []).map((o: any) => ({
+      ...o,
+      value: o?.value == null ? '' : String(o.value),
+    })) as typeof options;
+  }, [options]);
+
   const mergedOptions = useMemo(() => {
-    if (!allOptionFlag || !options?.length) return options;
+    if (!allOptionFlag || !normalizedOptions?.length) return normalizedOptions;
 
-    const hasAll = options.some((o: any) => o?.value === allOptionValue);
-    if (hasAll) return options;
+    const hasAll = normalizedOptions.some((o: any) => o?.value === allOptionValue);
+    if (hasAll) return normalizedOptions;
 
-    return [{ label: allOptionLabel, value: allOptionValue }, ...options];
-  }, [allOptionFlag, allOptionLabel, allOptionValue, options]);
+    return [{ label: allOptionLabel, value: allOptionValue }, ...normalizedOptions];
+  }, [allOptionFlag, allOptionLabel, allOptionValue, normalizedOptions]);
 
   return (
     <Select<V>

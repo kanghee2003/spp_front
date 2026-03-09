@@ -2,7 +2,7 @@ import type { Control } from 'react-hook-form';
 import { Controller } from 'react-hook-form';
 import SppSelect, { type SppSelectProps } from './SppSelect';
 
-type Primitive = string | number;
+type Primitive = string;
 
 export type SppSelectFormProps<V extends Primitive = any> = SppSelectProps<V> & {
   name: string;
