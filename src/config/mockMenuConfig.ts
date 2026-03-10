@@ -30,6 +30,7 @@ export const menuTreeSpp: MenuNode[] = [
       { key: 'Footer', path: 'FooterSample', label: 'Footer Sample', type: MenuType.VIEW },
       { key: 'Widget', path: 'WidgetSample', label: 'Widget Sample', type: MenuType.VIEW },
       { key: 'IpManagement', path: 'IpManagement', label: 'Ip Valid', type: MenuType.VIEW },
+      { key: 'ApprovalReqSample', path: 'ApprovalReqSample', label: 'ApprovalReqSample', type: MenuType.VIEW },
       {
         key: 'TabControl',
         path: 'TabControl',
