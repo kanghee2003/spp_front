@@ -135,6 +135,9 @@ const SppInputNumber = (props: SppInputNumberProps) => {
       const raw = input.value ?? '';
       const safe = sanitizeText(raw, allowDecimal, decimalScale);
       if (raw !== safe) input.value = safe;
+      if (safe === '') {
+        onChange?.(null);
+      }
     };
 
     input.addEventListener('beforeinput', onBeforeInputNative as any, true);
@@ -155,6 +158,7 @@ const SppInputNumber = (props: SppInputNumberProps) => {
       controls={controls}
       precision={precision}
       parser={parser}
+      changeOnBlur={false}
       formatter={formatter}
       inputMode={allowDecimal ? 'decimal' : 'numeric'}
       onKeyDown={handleKeyDown}

@@ -218,6 +218,14 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
       options={options}
       value={displayValue}
       popupMatchSelectWidth={false}
+      onClear={() => {
+        lastSyncedKeyRef.current = null;
+        setSuppressNextOpen(false);
+        setDisplayValue('');
+        setSearchValue('');
+        setOpen(false);
+        props.onChange?.(undefined as any);
+      }}
       onKeyDown={(e) => {
         if (e.key !== 'Enter') return;
         if (!open) return;
