@@ -121,23 +121,6 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
         }
       : false;
 
-  useEffect(() => {
-    if (!pagingEnabled) return;
-
-    const nextPage = initialPagination?.current ?? 1;
-    const nextPageSize = initialPagination?.pageSize ?? 10;
-
-    setPaginationParam((prev) => {
-      if (prev.page === nextPage && prev.pageSize === nextPageSize) return prev;
-      return {
-        ...prev,
-        page: nextPage,
-        pageSize: nextPageSize,
-        pageEditFlag: true,
-      };
-    });
-  }, [pagingEnabled, initialPagination?.current, initialPagination?.pageSize]);
-
   const getRowKey = (row: any): Key | undefined => {
     const rk: any = (props as any).rowKey;
     if (typeof rk === 'function') return rk(row);
@@ -251,6 +234,65 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
     }
   };
 
+  const renderServerPagination = () => {
+    if (!isServerPaging) return null;
+
+    const current = initialPagination?.current ?? paginationParam.page ?? 1;
+    const pageSize = initialPagination?.pageSize ?? paginationParam.pageSize ?? 10;
+    const total = totalCount;
+
+    const pageChange = (page: number, nextPageSize: number) => {
+      setPaginationParam((prev) => ({ ...prev, page, pageSize: nextPageSize, pageEditFlag: true }));
+      autoClickRef.current = false;
+
+      const p = { ...(initialPagination ?? {}), current: page, pageSize: nextPageSize, total } as TablePaginationConfig;
+      if (props?.onChange) props?.onChange(p, {}, {}, { action: 'paginate', currentDataSource: [] } as any);
+    };
+
+    return (
+      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
+        <Pagination
+          current={current}
+          pageSize={pageSize}
+          total={total}
+          showSizeChanger
+          pageSizeOptions={[10, 20, 50, 100]}
+          onChange={(page, size) => {
+            pageChange(page, size ?? pageSize);
+          }}
+          onShowSizeChange={(_, size) => {
+            pageChange(1, size);
+          }}
+        />
+      </div>
+    );
+  };
+
+  const setClassName = (record: any, index: number) => {
+    return index === props.selectedRowIndex ? 'selected-row' : '';
+  };
+
+  const setSelectedClassName = (record: any, index: number) => {
+    return index === selectRowIndex ? 'selected-row' : '';
+  };
+
+  useEffect(() => {
+    if (!pagingEnabled) return;
+
+    const nextPage = initialPagination?.current ?? 1;
+    const nextPageSize = initialPagination?.pageSize ?? 10;
+
+    setPaginationParam((prev) => {
+      if (prev.page === nextPage && prev.pageSize === nextPageSize) return prev;
+      return {
+        ...prev,
+        page: nextPage,
+        pageSize: nextPageSize,
+        pageEditFlag: true,
+      };
+    });
+  }, [pagingEnabled, initialPagination?.current, initialPagination?.pageSize]);
+
   useEffect(() => {
     if (!props.rowSelectedFlag) return;
     if (!props.autoSelectFirstRow) return;
@@ -267,14 +309,6 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
   useEffect(() => {
     autoClickRef.current = false;
   }, [props.paginationResetKey]);
-
-  const setClassName = (record: any, index: number) => {
-    return index === props.selectedRowIndex ? 'selected-row' : '';
-  };
-
-  const setSelectedClassName = (record: any, index: number) => {
-    return index === selectRowIndex ? 'selected-row' : '';
-  };
 
   useImperativeHandle(
     ref,
@@ -381,32 +415,6 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
 
     return () => window.removeEventListener('resize', handleResize);
   }, []);
-
-  const renderServerPagination = () => {
-    if (!isServerPaging) return null;
-
-    const current = initialPagination?.current ?? paginationParam.page ?? 1;
-    const pageSize = initialPagination?.pageSize ?? paginationParam.pageSize ?? 10;
-    const total = totalCount;
-
-    return (
-      <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 8 }}>
-        <Pagination
-          current={current}
-          pageSize={pageSize}
-          total={total}
-          showSizeChanger={false}
-          onChange={(page) => {
-            setPaginationParam((prev) => ({ ...prev, page, pageEditFlag: true }));
-            autoClickRef.current = false;
-
-            const p = { ...(initialPagination ?? {}), current: page, pageSize, total } as TablePaginationConfig;
-            if (props?.onChange) props?.onChange(p, {}, {}, { action: 'paginate', currentDataSource: [] } as any);
-          }}
-        />
-      </div>
-    );
-  };
 
   return (
     <div ref={wrapRef}>
