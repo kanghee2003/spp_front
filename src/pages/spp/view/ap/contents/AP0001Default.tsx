@@ -1,5 +1,5 @@
 import { Alert } from 'antd';
-import { ApprovalContentProps } from '../../../type/ap/Approval.type';
+import { ApprovalContentProps } from '../../../type/ap/SppApproval.type';
 
 const AP0001Default = ({ formId: formCode }: ApprovalContentProps) => {
   return (

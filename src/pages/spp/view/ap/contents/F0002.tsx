@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Descriptions, message } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 
-import { ApprovalContentProps } from '@/pages/spp/type/ap/Approval.type';
+import { ApprovalContentProps } from '@/pages/spp/type/ap/SppApproval.type';
 import SppInputText from '@/pages/spp/component/Input/SppInputText';
 
 type F0002Form = {

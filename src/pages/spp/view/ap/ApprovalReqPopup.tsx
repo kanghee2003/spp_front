@@ -2,7 +2,7 @@ import { Button, Descriptions, Spin, message } from 'antd';
 import { Suspense, useEffect, useRef, useState } from 'react';
 
 import SppModal from '../../component/Modal/SppModal';
-import { ApprovalContentComponent, ApprovalContentMode } from '../../type/ap/Approval.type';
+import { ApprovalContentComponent, ApprovalContentMode } from '../../type/ap/SppApproval.type';
 
 type ModuleType = {
   default: ApprovalContentComponent;

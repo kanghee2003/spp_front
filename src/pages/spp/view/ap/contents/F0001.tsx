@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Button, Descriptions, Input, message } from 'antd';
 import { Controller, useForm } from 'react-hook-form';
 
-import { ApprovalContentProps } from '@/pages/spp/type/ap/Approval.type';
+import { ApprovalContentProps } from '@/pages/spp/type/ap/SppApproval.type';
 import SppInputText from '@/pages/spp/component/Input/SppInputText';
 import SppTable from '@/pages/spp/component/Table/SppTable';
 

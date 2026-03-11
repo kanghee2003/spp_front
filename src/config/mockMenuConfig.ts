@@ -1,4 +1,5 @@
-import { MenuType, type MenuNode, type SystemKey } from '@/store/menu.store';
+import { MenuType, type MenuNode } from '@/store/menu.store';
+import { SystemKey } from '@/utils/system.util';
 
 // AppLayout 등에서 type을 import할 수 있도록 re-export
 export type { MenuNode } from '@/store/menu.store';
@@ -62,8 +63,13 @@ export const menuTreeEtc: MenuNode[] = [
   },
 ];
 
+const menuTreeMap: Record<SystemKey, MenuNode[]> = {
+  spp: menuTreeSpp,
+  etc: menuTreeEtc,
+};
+
 export function getMockMenuTree(systemKey: SystemKey): MenuNode[] {
-  return systemKey === 'etc' ? menuTreeEtc : menuTreeSpp;
+  return menuTreeMap[systemKey];
 }
 
 // 기본 시스템은 spp

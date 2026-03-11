@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Descriptions } from 'antd';
-import { ApprovalContentProps } from '@/pages/spp/type/ap/Approval.type';
+import { ApprovalContentProps } from '@/pages/spp/type/ap/SppApproval.type';
 
 type F0003Data = {
   docNo: string;
