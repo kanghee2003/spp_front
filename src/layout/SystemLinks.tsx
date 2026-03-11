@@ -2,10 +2,11 @@ import { LinkOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Drawer, List, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
-import { useMessage } from '@/hook/useMessage';
-import { useMenuStore, type SystemKey } from '@/store/menu.store';
-import { useMdiStore } from '@/store/mdi.store';
 import { getMockMenuTree } from '@/config/mockMenuConfig';
+import { useMessage } from '@/hook/useMessage';
+import { useMdiStore } from '@/store/mdi.store';
+import { useMenuStore } from '@/store/menu.store';
+import { SYSTEM_KEY_LIST, type SystemKey } from '@/utils/system.util';
 
 type SystemLink = {
   label: string;
@@ -103,7 +104,7 @@ const SystemLinks = () => {
 
                 // 내부 시스템 전환: /{systemKey} 로 URL 변경 + 메뉴 트리 교체 + 탭 초기화
                 const nextSystem = item.href as SystemKey;
-                if (nextSystem !== 'spp' && nextSystem !== 'etc') {
+                if (!SYSTEM_KEY_LIST.includes(nextSystem)) {
                   alertMessage('준비중입니다.');
                   return;
                 }

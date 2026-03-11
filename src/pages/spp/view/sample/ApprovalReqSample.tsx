@@ -5,7 +5,7 @@ import ApprovalReqPopup from '../ap/ApprovalReqPopup';
 const ApprovalReqSample = () => {
   const [open, setOpen] = useState(false);
   const [open2, setOpen2] = useState(false);
-  const formCode = 'F0001';
+  const [open3, setOpen3] = useState(false);
 
   return (
     <>
@@ -13,28 +13,17 @@ const ApprovalReqSample = () => {
         결재요청1
       </Button>
 
-      <ApprovalReqPopup
-        open={open}
-        onClose={() => setOpen(false)}
-        formCode={'F0001'}
-        bizData={{
-          docNo: 'DOC-20260309-001',
-          seq: 123,
-        }}
-      />
       <Button type="primary" onClick={() => setOpen2(true)}>
         결재요청2
       </Button>
 
-      <ApprovalReqPopup
-        open={open2}
-        onClose={() => setOpen2(false)}
-        formCode={'F0002'}
-        bizData={{
-          docNo: 'DOC-20260309-002',
-          seq: 3333,
-        }}
-      />
+      <Button type="primary" onClick={() => setOpen3(true)}>
+        결재요청3
+      </Button>
+
+      <ApprovalReqPopup open={open} onClose={() => setOpen(false)} formCode="F0001" docNo="DOC-20260309-001" />
+      <ApprovalReqPopup open={open2} onClose={() => setOpen2(false)} formCode="F0002" docNo="DOC-20260309-001" />
+      <ApprovalReqPopup open={open3} onClose={() => setOpen3(false)} formCode="F0003" docNo="DOC-20260309-003" />
     </>
   );
 };

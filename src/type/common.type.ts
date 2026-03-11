@@ -46,7 +46,7 @@ export interface CodeResponse {
   value: string;
 }
 
-export interface SessionUserInfo {
+export interface UserInfo {
   userId: string;
   userName: string;
   admFlag: boolean;

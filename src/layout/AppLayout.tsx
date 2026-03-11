@@ -11,6 +11,7 @@ import SystemLinks from '@/layout/SystemLinks';
 import { useMdiStore } from '@/store/mdi.store';
 import { MenuType, useMenuStore } from '@/store/menu.store';
 import { Footer } from 'antd/es/layout/layout';
+import { useAuthStore } from '@/store/auth.store';
 
 const { Header, Sider, Content } = Layout;
 
@@ -71,6 +72,7 @@ const AppLayout = () => {
   const ensureDashboard = useMdiStore((s) => s.ensureDashboard);
   const openTab = useMdiStore((s) => s.openTab);
   const setActive = useMdiStore((s) => s.setActive);
+  const clearToken = useAuthStore((s) => s.clearToken);
 
   const topMenus = useMemo(() => {
     return menuTree.filter((n) => n.key !== 'HOME');
@@ -192,6 +194,7 @@ const AppLayout = () => {
         >
           GNB
         </Typography.Title>
+        <Button onClick={clearToken}>로그아웃</Button>
       </Header>
 
       <Layout>

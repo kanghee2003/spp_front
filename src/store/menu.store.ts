@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { getSystemKeyFromPath, type SystemKey } from '@/utils/system.util';
 
 export enum MenuType {
   FOLDER = 'F',
@@ -13,8 +14,6 @@ export type MenuNode = {
   type: MenuType;
   children?: MenuNode[];
 };
-
-export type SystemKey = 'spp' | 'etc';
 
 type State = {
   systemKey: SystemKey;
@@ -52,17 +51,12 @@ const findNode = (menus: MenuNode[], targetKey: string): MenuNode | undefined =>
       if (found) return found;
     }
   }
+
+  return undefined;
 };
 
 export const useMenuStore = create<State>((set, get) => ({
-  systemKey: (() => {
-    try {
-      const seg = window.location.pathname.split('/').filter(Boolean)[0] as SystemKey | undefined;
-      return seg === 'etc' || seg === 'spp' ? seg : 'spp';
-    } catch {
-      return 'spp';
-    }
-  })(),
+  systemKey: getSystemKeyFromPath(),
 
   menuTree: [],
 

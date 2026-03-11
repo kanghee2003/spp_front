@@ -30,3 +30,18 @@ export async function setSystemCss(systemKey: string) {
   const css = await loader();
   ensureStyleTag().textContent = css;
 }
+
+export const SYSTEM_KEY_LIST = ['spp', 'etc'] as const;
+
+export type SystemKey = (typeof SYSTEM_KEY_LIST)[number];
+
+export const getSystemKeyFromPath = (pathname?: string): SystemKey => {
+  try {
+    const targetPath = pathname ?? window.location.pathname;
+    const seg = targetPath.split('/').filter(Boolean)[0];
+
+    return SYSTEM_KEY_LIST.includes(seg as SystemKey) ? (seg as SystemKey) : 'spp';
+  } catch {
+    return 'spp';
+  }
+};
