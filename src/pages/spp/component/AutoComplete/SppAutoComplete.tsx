@@ -149,7 +149,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
             return;
           }
 
-          setDisplayValue(`${hit.userId} | ${hit.gradeNm}`);
+          setDisplayValue(`${hit.userId} | ${hit.userName}`);
           return;
         }
 
