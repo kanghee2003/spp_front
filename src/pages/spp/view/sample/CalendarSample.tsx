@@ -8,20 +8,21 @@ import { MouseEvent, useMemo, useRef, useState } from 'react';
 dayjs.locale('ko');
 
 type ScheduleItem = {
-  id: number;
-  title: string;
-  date: string;
-  startTime?: string;
-  endTime?: string;
-  allDay?: boolean;
+  schdNo: number;
+  schdTtlNm: string;
+  schdSttDate: string;
+  schdEndDate: string;
+  schdSttTime?: string;
+  schdEndTime?: string;
+  allDay?: string;
 };
 
 const mockSchedules: ScheduleItem[] = [
-  { id: 1, title: '정보보호 점검', date: '2026-03-10', allDay: true },
-  { id: 2, title: '교육 일정', date: '2026-03-10', startTime: '09:00', endTime: '10:00' },
-  { id: 3, title: '회의', date: '2026-03-11', startTime: '14:00', endTime: '15:00' },
-  { id: 4, title: '점검', date: '2026-03-11', startTime: '16:00', endTime: '17:00' },
-  { id: 5, title: '보고', date: '2026-03-12', startTime: '10:00', endTime: '11:00' },
+  { schdNo: 1, schdTtlNm: '정보보호 점검', schdSttDate: '2026-03-10', schdEndDate: '2026-03-10', allDay: 'Y' },
+  { schdNo: 2, schdTtlNm: '교육 일정', schdSttDate: '2026-03-10', schdEndDate: '2026-03-10', schdSttTime: '09:00', schdEndTime: '10:00' },
+  { schdNo: 3, schdTtlNm: '회의', schdSttDate: '2026-03-11', schdEndDate: '2026-03-11', schdSttTime: '14:00', schdEndTime: '15:00' },
+  { schdNo: 4, schdTtlNm: '점검', schdSttDate: '2026-03-11', schdEndDate: '2026-03-11', schdSttTime: '16:00', schdEndTime: '17:00' },
+  { schdNo: 5, schdTtlNm: '보고', schdSttDate: '2026-03-12', schdEndDate: '2026-03-12', schdSttTime: '10:00', schdEndTime: '11:00' },
 ];
 
 const PREVIEW_LIMIT = 2;
@@ -37,7 +38,7 @@ function isSameDate(a: Dayjs | null, b: Dayjs) {
 
 function formatScheduleTime(item: ScheduleItem) {
   if (item.allDay) return '하루 종일';
-  if (item.startTime && item.endTime) return `${item.startTime} ~ ${item.endTime}`;
+  if (item.schdSttTime && item.schdEndTime) return `${item.schdSttTime} ~ ${item.schdEndTime}`;
   return '';
 }
 
@@ -52,7 +53,7 @@ const CalendarPage = () => {
     const map = new Map<string, ScheduleItem[]>();
 
     mockSchedules.forEach((item) => {
-      const key = item.date;
+      const key = item.schdSttDate;
       const list = map.get(key) ?? [];
       list.push(item);
       map.set(key, list);
@@ -129,16 +130,16 @@ const CalendarPage = () => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {previewList.map((item) => (
             <div
-              key={item.id}
+              key={item.schdNo}
               style={{
                 fontSize: 12,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
                 whiteSpace: 'nowrap',
               }}
-              title={item.title}
+              title={item.schdTtlNm}
             >
-              • {item.title}
+              • {item.schdTtlNm}
             </div>
           ))}
 
@@ -233,8 +234,8 @@ const CalendarPage = () => {
               <div style={{ fontSize: 12, color: '#666' }}>등록된 일정이 없습니다.</div>
             ) : (
               selectedSchedules.map((item) => (
-                <div key={item.id}>
-                  <div style={{ fontWeight: 500 }}>{item.title}</div>
+                <div key={item.schdNo}>
+                  <div style={{ fontWeight: 500 }}>{item.schdTtlNm}</div>
                   <div style={{ fontSize: 12, color: '#666' }}>{formatScheduleTime(item)}</div>
                 </div>
               ))
