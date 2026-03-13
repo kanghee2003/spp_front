@@ -1,4 +1,4 @@
-import { joinFiles } from '@/utils/common.util';
+import { joinFiles } from '@/utils/file.util';
 import { z } from 'zod';
 
 /**

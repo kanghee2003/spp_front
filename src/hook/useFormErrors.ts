@@ -62,7 +62,7 @@ export function useAlertFormErrors() {
   const { alertMessage } = useMessage();
 
   const lastMessageRef = useRef<string | null>(null);
-  const lastShownAtRef = useRef<number>(0);
+  const lastShowAtRef = useRef<number>(0);
 
   return useCallback(
     async (errors: AnyErrors, title?: string) => {
@@ -74,12 +74,12 @@ export function useAlertFormErrors() {
 
       const tick = 300;
 
-      if (lastMessageRef.current === first && now - lastShownAtRef.current < tick) {
+      if (lastMessageRef.current === first && now - lastShowAtRef.current < tick) {
         return;
       }
 
       lastMessageRef.current = first;
-      lastShownAtRef.current = now;
+      lastShowAtRef.current = now;
 
       await alertMessage(first, title);
     },
