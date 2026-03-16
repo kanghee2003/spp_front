@@ -1,5 +1,5 @@
 import { Button, Calendar, Divider, Space, type CalendarProps } from 'antd';
-import { LeftOutlined, RightOutlined, CloseOutlined } from '@ant-design/icons';
+import { CloseOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import locale from 'antd/es/date-picker/locale/ko_KR';
 import 'dayjs/locale/ko';
@@ -19,10 +19,12 @@ type ScheduleItem = {
 
 const mockSchedules: ScheduleItem[] = [
   { schdNo: 1, schdTtlNm: '정보보호 점검', schdSttDate: '2026-03-10', schdEndDate: '2026-03-10', allDay: 'Y' },
-  { schdNo: 2, schdTtlNm: '교육 일정', schdSttDate: '2026-03-10', schdEndDate: '2026-03-10', schdSttTime: '09:00', schdEndTime: '10:00' },
-  { schdNo: 3, schdTtlNm: '회의', schdSttDate: '2026-03-11', schdEndDate: '2026-03-11', schdSttTime: '14:00', schdEndTime: '15:00' },
-  { schdNo: 4, schdTtlNm: '점검', schdSttDate: '2026-03-11', schdEndDate: '2026-03-11', schdSttTime: '16:00', schdEndTime: '17:00' },
-  { schdNo: 5, schdTtlNm: '보고', schdSttDate: '2026-03-12', schdEndDate: '2026-03-12', schdSttTime: '10:00', schdEndTime: '11:00' },
+  { schdNo: 2, schdTtlNm: '교육 일정', schdSttDate: '2026-03-10', schdEndDate: '2026-03-10', schdSttTime: '09:00', schdEndTime: '10:00', allDay: 'N' },
+  { schdNo: 3, schdTtlNm: '회의', schdSttDate: '2026-03-11', schdEndDate: '2026-03-11', schdSttTime: '14:00', schdEndTime: '15:00', allDay: 'N' },
+  { schdNo: 4, schdTtlNm: '점검', schdSttDate: '2026-03-11', schdEndDate: '2026-03-11', schdSttTime: '16:00', schdEndTime: '17:00', allDay: 'N' },
+  { schdNo: 5, schdTtlNm: '보고', schdSttDate: '2026-03-12', schdEndDate: '2026-03-12', schdSttTime: '10:00', schdEndTime: '11:00', allDay: 'N' },
+  { schdNo: 6, schdTtlNm: '3일 점검 일정', schdSttDate: '2026-03-13', schdEndDate: '2026-03-15', allDay: 'Y' },
+  { schdNo: 7, schdTtlNm: '장기 프로젝트 회의', schdSttDate: '2026-03-18', schdEndDate: '2026-03-20', schdSttTime: '09:00', schdEndTime: '18:00', allDay: 'N' },
 ];
 
 const PREVIEW_LIMIT = 2;
@@ -37,9 +39,57 @@ function isSameDate(a: Dayjs | null, b: Dayjs) {
 }
 
 function formatScheduleTime(item: ScheduleItem) {
-  if (item.allDay) return '하루 종일';
+  if (item.allDay === 'Y') return '하루 종일';
   if (item.schdSttTime && item.schdEndTime) return `${item.schdSttTime} ~ ${item.schdEndTime}`;
   return '';
+}
+
+function getDateColor(date: Dayjs) {
+  const day = date.day();
+
+  if (day === 0) return '#ff4d4f';
+  if (day === 6) return '#1677ff';
+  return '#000000d9';
+}
+
+function filterSchedulesForMonth(schedules: ScheduleItem[], currentDate: Dayjs) {
+  const monthStart = currentDate.startOf('month');
+  const nextMonthStart = currentDate.add(1, 'month').startOf('month');
+
+  return schedules.filter((item) => {
+    const startDate = dayjs(item.schdSttDate, 'YYYY-MM-DD');
+    const endDate = dayjs(item.schdEndDate, 'YYYY-MM-DD');
+
+    if (!startDate.isValid() || !endDate.isValid()) return false;
+    if (endDate.isBefore(startDate, 'day')) return false;
+
+    return startDate.isBefore(nextMonthStart, 'day') && (endDate.isAfter(monthStart, 'day') || endDate.isSame(monthStart, 'day'));
+  });
+}
+
+function buildSchedulesByDate(schedules: ScheduleItem[]) {
+  const map = new Map<string, ScheduleItem[]>();
+
+  schedules.forEach((item) => {
+    const startDate = dayjs(item.schdSttDate, 'YYYY-MM-DD');
+    const endDate = dayjs(item.schdEndDate, 'YYYY-MM-DD');
+
+    if (!startDate.isValid() || !endDate.isValid()) return;
+    if (endDate.isBefore(startDate, 'day')) return;
+
+    let cursor = startDate.startOf('day');
+    const lastDate = endDate.startOf('day');
+
+    while (cursor.isBefore(lastDate, 'day') || cursor.isSame(lastDate, 'day')) {
+      const key = cursor.format('YYYY-MM-DD');
+      const list = map.get(key) ?? [];
+      list.push(item);
+      map.set(key, list);
+      cursor = cursor.add(1, 'day');
+    }
+  });
+
+  return map;
 }
 
 const CalendarPage = () => {
@@ -50,17 +100,9 @@ const CalendarPage = () => {
   const calendarWrapRef = useRef<HTMLDivElement | null>(null);
 
   const schedulesByDate = useMemo(() => {
-    const map = new Map<string, ScheduleItem[]>();
-
-    mockSchedules.forEach((item) => {
-      const key = item.schdSttDate;
-      const list = map.get(key) ?? [];
-      list.push(item);
-      map.set(key, list);
-    });
-
-    return map;
-  }, []);
+    const monthSchedules = filterSchedulesForMonth(mockSchedules, currentDate);
+    return buildSchedulesByDate(monthSchedules);
+  }, [currentDate]);
 
   const getSchedules = (date: Dayjs) => {
     return schedulesByDate.get(getDateKey(date)) ?? [];
@@ -111,6 +153,13 @@ const CalendarPage = () => {
     const previewList = schedules.slice(0, PREVIEW_LIMIT);
     const hiddenCount = Math.max(0, schedules.length - PREVIEW_LIMIT);
     const selected = isSameDate(selectedDate, date);
+    const isCurrentMonth = date.month() === currentDate.month();
+
+    let dateColor = getDateColor(date);
+
+    if (!isCurrentMonth) {
+      dateColor = '#bfbfbf';
+    }
 
     return (
       <div
@@ -125,12 +174,21 @@ const CalendarPage = () => {
         }}
         onClick={(e) => handleCellClick(date, e)}
       >
-        <div style={{ textAlign: 'right', fontWeight: 600, marginBottom: 8 }}>{date.date()}</div>
+        <div
+          style={{
+            textAlign: 'right',
+            fontWeight: 600,
+            marginBottom: 8,
+            color: dateColor,
+          }}
+        >
+          {date.date()}
+        </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
           {previewList.map((item) => (
             <div
-              key={item.schdNo}
+              key={`${getDateKey(date)}-${item.schdNo}`}
               style={{
                 fontSize: 12,
                 overflow: 'hidden',
@@ -234,7 +292,7 @@ const CalendarPage = () => {
               <div style={{ fontSize: 12, color: '#666' }}>등록된 일정이 없습니다.</div>
             ) : (
               selectedSchedules.map((item) => (
-                <div key={item.schdNo}>
+                <div key={`${selectedDate.format('YYYY-MM-DD')}-${item.schdNo}`}>
                   <div style={{ fontWeight: 500 }}>{item.schdTtlNm}</div>
                   <div style={{ fontSize: 12, color: '#666' }}>{formatScheduleTime(item)}</div>
                 </div>
