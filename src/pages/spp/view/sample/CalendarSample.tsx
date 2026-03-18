@@ -1,4 +1,4 @@
-import { Button, Calendar, Divider, Space, type CalendarProps } from 'antd';
+import { Button, Calendar, Checkbox, DatePicker, Divider, Input, Modal, Select, Space, type CalendarProps } from 'antd';
 import { CloseOutlined, LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs, { type Dayjs } from 'dayjs';
 import locale from 'antd/es/date-picker/locale/ko_KR';
@@ -44,7 +44,9 @@ function formatScheduleTime(item: ScheduleItem) {
   return '';
 }
 
-function getDateColor(date: Dayjs) {
+function getDateColor(date: Dayjs, currentDate: Dayjs) {
+  if (date.month() !== currentDate.month()) return '#bfbfbf';
+
   const day = date.day();
 
   if (day === 0) return '#ff4d4f';
@@ -92,10 +94,31 @@ function buildSchedulesByDate(schedules: ScheduleItem[]) {
   return map;
 }
 
+const timeOptions = Array.from({ length: 48 }, (_, index) => {
+  const hour = String(Math.floor(index / 2)).padStart(2, '0');
+  const minute = index % 2 === 0 ? '00' : '30';
+  const value = `${hour}:${minute}`;
+
+  return {
+    label: value,
+    value,
+  };
+});
+
 const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState<Dayjs>(dayjs());
   const [selectedDate, setSelectedDate] = useState<Dayjs | null>(null);
   const [layerPos, setLayerPos] = useState<{ top: number; left: number } | null>(null);
+
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false);
+  const [schdTtlNm, setSchdTtlNm] = useState('');
+  const [schdPlcNm, setSchdPlcNm] = useState('');
+  const [schdCn, setSchdCn] = useState('');
+  const [schdSttDate, setSchdSttDate] = useState<Dayjs | null>(null);
+  const [schdEndDate, setSchdEndDate] = useState<Dayjs | null>(null);
+  const [schdSttTime, setSchdSttTime] = useState<string>('09:00');
+  const [schdEndTime, setSchdEndTime] = useState<string>('10:00');
+  const [allDay, setAllDay] = useState(false);
 
   const calendarWrapRef = useRef<HTMLDivElement | null>(null);
 
@@ -122,6 +145,39 @@ const CalendarPage = () => {
     setCurrentDate(value);
     setSelectedDate(null);
     setLayerPos(null);
+  };
+
+  const openScheduleModal = (date?: Dayjs | null) => {
+    const baseDate = date ?? selectedDate ?? dayjs();
+
+    setSchdTtlNm('');
+    setSchdPlcNm('');
+    setSchdCn('');
+    setSchdSttDate(baseDate);
+    setSchdEndDate(baseDate);
+    setSchdSttTime('09:00');
+    setSchdEndTime('10:00');
+    setAllDay(false);
+    setScheduleModalOpen(true);
+  };
+
+  const closeScheduleModal = () => {
+    setScheduleModalOpen(false);
+  };
+
+  const handleSaveSchedule = () => {
+    console.log('저장', {
+      schdTtlNm,
+      schdPlcNm,
+      schdCn,
+      schdSttDate: schdSttDate?.format('YYYY-MM-DD'),
+      schdEndDate: schdEndDate?.format('YYYY-MM-DD'),
+      schdSttTime,
+      schdEndTime,
+      allDay: allDay ? 'Y' : 'N',
+    });
+
+    setScheduleModalOpen(false);
   };
 
   const handleCellClick = (date: Dayjs, e: MouseEvent<HTMLDivElement>) => {
@@ -153,13 +209,7 @@ const CalendarPage = () => {
     const previewList = schedules.slice(0, PREVIEW_LIMIT);
     const hiddenCount = Math.max(0, schedules.length - PREVIEW_LIMIT);
     const selected = isSameDate(selectedDate, date);
-    const isCurrentMonth = date.month() === currentDate.month();
-
-    let dateColor = getDateColor(date);
-
-    if (!isCurrentMonth) {
-      dateColor = '#bfbfbf';
-    }
+    const dateColor = getDateColor(date, currentDate);
 
     return (
       <div
@@ -274,7 +324,7 @@ const CalendarPage = () => {
               marginBottom: 12,
             }}
           >
-            <div style={{ fontWeight: 700 }}>{selectedDate.format('YYYY-MM-DD')}</div>
+            <div style={{ fontWeight: 700 }}>{selectedDate.format('YYYY-MM-DD (ddd)')}</div>
 
             <Button
               type="text"
@@ -306,13 +356,116 @@ const CalendarPage = () => {
             type="primary"
             size="small"
             onClick={() => {
-              console.log('일정추가', selectedDate.format('YYYY-MM-DD'));
+              openScheduleModal(selectedDate);
             }}
           >
             일정추가
           </Button>
         </div>
       )}
+
+      <Modal open={scheduleModalOpen} onCancel={closeScheduleModal} footer={null} destroyOnHidden width={960} title="일정추가">
+        <div style={{ marginTop: 8 }}>
+          <div style={{ fontSize: 18, fontWeight: 700, marginBottom: 20 }}>일정 기본정보</div>
+
+          <div style={{ border: '1px solid #e5e5e5' }}>
+            <div style={{ display: 'flex', borderBottom: '1px solid #e5e5e5' }}>
+              <div
+                style={{
+                  width: 140,
+                  padding: '16px 12px',
+                  background: '#fafafa',
+                  fontWeight: 600,
+                  borderRight: '1px solid #e5e5e5',
+                }}
+              >
+                제목 <span style={{ color: '#ff4d4f' }}>*</span>
+              </div>
+
+              <div style={{ flex: 1, padding: 12 }}>
+                <Input value={schdTtlNm} onChange={(e) => setSchdTtlNm(e.target.value)} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', borderBottom: '1px solid #e5e5e5' }}>
+              <div
+                style={{
+                  width: 140,
+                  padding: '16px 12px',
+                  background: '#fafafa',
+                  fontWeight: 600,
+                  borderRight: '1px solid #e5e5e5',
+                }}
+              >
+                일시 <span style={{ color: '#ff4d4f' }}>*</span>
+              </div>
+
+              <div style={{ flex: 1, padding: 12 }}>
+                <Space wrap>
+                  <DatePicker value={schdSttDate} onChange={setSchdSttDate} locale={locale} />
+                  <Select style={{ width: 100 }} value={schdSttTime} onChange={setSchdSttTime} options={timeOptions} disabled={allDay} />
+                  <span>~</span>
+                  <DatePicker value={schdEndDate} onChange={setSchdEndDate} locale={locale} />
+                  <Select style={{ width: 100 }} value={schdEndTime} onChange={setSchdEndTime} options={timeOptions} disabled={allDay} />
+                  <Checkbox checked={allDay} onChange={(e) => setAllDay(e.target.checked)}>
+                    하루종일
+                  </Checkbox>
+                </Space>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', borderBottom: '1px solid #e5e5e5' }}>
+              <div
+                style={{
+                  width: 140,
+                  padding: '16px 12px',
+                  background: '#fafafa',
+                  fontWeight: 600,
+                  borderRight: '1px solid #e5e5e5',
+                }}
+              >
+                장소 <span style={{ color: '#ff4d4f' }}>*</span>
+              </div>
+
+              <div style={{ flex: 1, padding: 12 }}>
+                <Input value={schdPlcNm} onChange={(e) => setSchdPlcNm(e.target.value)} />
+              </div>
+            </div>
+
+            <div style={{ display: 'flex' }}>
+              <div
+                style={{
+                  width: 140,
+                  padding: '16px 12px',
+                  background: '#fafafa',
+                  fontWeight: 600,
+                  borderRight: '1px solid #e5e5e5',
+                }}
+              >
+                내용
+              </div>
+
+              <div style={{ flex: 1, padding: 12 }}>
+                <Input.TextArea value={schdCn} onChange={(e) => setSchdCn(e.target.value)} rows={6} placeholder="내용을 입력해주세요" />
+              </div>
+            </div>
+          </div>
+
+          <div
+            style={{
+              marginTop: 24,
+              display: 'flex',
+              justifyContent: 'center',
+              gap: 12,
+            }}
+          >
+            <Button onClick={closeScheduleModal}>닫기</Button>
+            <Button type="primary" onClick={handleSaveSchedule}>
+              저장
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 };

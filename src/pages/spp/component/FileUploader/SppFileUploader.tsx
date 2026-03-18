@@ -1,5 +1,5 @@
 import { Input, Space } from 'antd';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import SppButton from '../Button/SppButton';
 
 export interface SppFileUploaderProps {
@@ -7,14 +7,22 @@ export interface SppFileUploaderProps {
   onChange?: (file: File | null) => void;
   accept?: string;
   disabled?: boolean;
+  displayFileName?: string;
+  onDeleteOrigin?: () => void;
 }
 
 const SppFileUploader = (props: SppFileUploaderProps) => {
-  const { value, onChange, accept, disabled } = props;
+  const { value, onChange, accept, disabled, displayFileName, onDeleteOrigin } = props;
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const fileName = useMemo(() => value?.name ?? '', [value]);
-  const hasFile = useMemo(() => !!value, [value]);
+  const fileName = useMemo(() => value?.name ?? displayFileName ?? '', [value, displayFileName]);
+  const hasFile = useMemo(() => !!value || !!displayFileName, [value, displayFileName]);
+
+  useEffect(() => {
+    if (!value && fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  }, [value]);
 
   return (
     <Space.Compact style={{ width: '100%' }}>
@@ -44,7 +52,12 @@ const SppFileUploader = (props: SppFileUploaderProps) => {
         type="default"
         disabled={disabled || !hasFile}
         onClick={() => {
-          onChange?.(null);
+          if (value) {
+            onChange?.(null);
+          } else if (displayFileName) {
+            onDeleteOrigin?.();
+          }
+
           if (fileInputRef.current) fileInputRef.current.value = '';
         }}
       >

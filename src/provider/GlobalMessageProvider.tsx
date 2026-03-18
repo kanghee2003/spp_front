@@ -12,6 +12,12 @@ const GlobalMessageProvider = () => {
   const lastAlertSig = useRef<string>('');
   const lastConfirmSig = useRef<string>('');
 
+  const renderMultiline = (text?: string) => {
+    if (!text) return null;
+
+    return text.split('\n').map((line, i) => <div key={i}>{line}</div>);
+  };
+
   useEffect(() => {
     if (!alertState?.isOpen) return;
 
@@ -23,7 +29,7 @@ const GlobalMessageProvider = () => {
     lastAlertSig.current = sig;
 
     Modal.info({
-      title: alertState.message,
+      title: renderMultiline(alertState.message),
       okText: alertState.okText,
       onOk: alertState.onClickOK,
     });
