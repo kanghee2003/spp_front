@@ -24,34 +24,27 @@ function fileToSystemAndPagePath(file: string): { systemKey: string; pagePath: s
   return { systemKey: m[1], pagePath: m[2] };
 }
 
-function normalizePath(parentPath: string, nodePath?: string): string {
-  const p = (parentPath ?? '').replace(/^\/+|\/+$/g, '');
-  const c = (nodePath ?? '').replace(/^\/+|\/+$/g, '');
-
-  if (c.includes('/')) return c;
-  if (!p) return c;
-  if (!c) return p;
-  return `${p}/${c}`;
+function normalizeNodePath(nodePath?: string): string {
+  return (nodePath ?? '').replace(/^\/+|\/+$/g, '');
 }
 
 function flattenViewLeaves(tree: MenuNode[]): MenuNode[] {
   const out: MenuNode[] = [];
-  const walk = (nodes: MenuNode[], parentPath: string) => {
-    for (const n of nodes) {
-      const fullPath = normalizePath(parentPath, n.path);
 
+  const walk = (nodes: MenuNode[]) => {
+    for (const n of nodes) {
       if (n.type === MenuType.VIEW) {
-        out.push({ ...n, path: fullPath });
+        out.push({ ...n, path: normalizeNodePath(n.path) });
         continue;
       }
 
       if (n.children && n.children.length > 0) {
-        walk(n.children, fullPath);
+        walk(n.children);
       }
     }
   };
 
-  walk(tree, '');
+  walk(tree);
   return out;
 }
 
@@ -66,11 +59,11 @@ export function loadRoutes(systemKey: string, menuTree: MenuNode[]): AppRoute[] 
   }
 
   const loaderByPath = loaderBySystemPath.get(systemKey) ?? new Map<string, () => Promise<PageModule>>();
-
   const leaves = flattenViewLeaves(menuTree);
 
   const routes: AppRoute[] = leaves.map((leaf) => {
-    const loader = leaf.path ? loaderByPath.get(leaf.path) : undefined;
+    const resolvedPath = normalizeNodePath(leaf.path);
+    const loader = resolvedPath ? loaderByPath.get(resolvedPath) : undefined;
 
     if (!loader) {
       return {
