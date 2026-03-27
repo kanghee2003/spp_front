@@ -1,6 +1,7 @@
+import { CloseCircleFilled } from '@ant-design/icons';
 import { InputNumber, type InputNumberProps } from 'antd';
 import type { ClipboardEventHandler, KeyboardEvent, KeyboardEventHandler } from 'react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export interface SppInputNumberProps extends Omit<InputNumberProps<number>, 'formatter' | 'parser' | 'stringMode'> {
   /** 소수점 허용 여부 */
@@ -9,6 +10,8 @@ export interface SppInputNumberProps extends Omit<InputNumberProps<number>, 'for
   useComma?: boolean;
   /** 소수점 허용 시 소수 자릿수 제한 */
   decimalScale?: number;
+  /** clear 버튼 표시 여부 */
+  allowClear?: boolean;
 }
 
 function addComma(s: string) {
@@ -51,9 +54,32 @@ function isAllowedInsertedText(text: string, allowDecimal: boolean) {
 }
 
 const SppInputNumber = (props: SppInputNumberProps) => {
-  const { allowDecimal = false, useComma = false, decimalScale, controls = false, onKeyDown, onPaste, onChange, ...rest } = props;
+  const {
+    allowDecimal = false,
+    useComma = false,
+    decimalScale,
+    allowClear = false,
+    controls = false,
+    onKeyDown,
+    onPaste,
+    onChange,
+    value,
+    defaultValue,
+    style,
+    ...rest
+  } = props;
 
   const inputNumberRef = useRef<any>(null);
+  const isControlled = value !== undefined;
+  const [innerValue, setInnerValue] = useState<number | null>((defaultValue as number | null | undefined) ?? null);
+  const mergedValue = isControlled ? (value ?? null) : innerValue;
+
+  const handleValueChange = (v: number | null) => {
+    if (!isControlled) {
+      setInnerValue(v);
+    }
+    onChange?.(v);
+  };
 
   const parser = (v?: string) => {
     const text = sanitizeText(v ?? '', allowDecimal, decimalScale);
@@ -136,7 +162,7 @@ const SppInputNumber = (props: SppInputNumberProps) => {
       const safe = sanitizeText(raw, allowDecimal, decimalScale);
       if (raw !== safe) input.value = safe;
       if (safe === '') {
-        onChange?.(null);
+        handleValueChange(null);
       }
     };
 
@@ -147,27 +173,62 @@ const SppInputNumber = (props: SppInputNumberProps) => {
       input.removeEventListener('beforeinput', onBeforeInputNative as any, true);
       input.removeEventListener('input', onInputNative, true);
     };
-  }, [allowDecimal, decimalScale]);
+  }, [allowDecimal, decimalScale, onChange, isControlled]);
 
   const precision = allowDecimal ? decimalScale : 0;
+  const hasValue = mergedValue !== null && mergedValue !== undefined;
 
   return (
-    <InputNumber<number>
-      {...rest}
-      ref={inputNumberRef}
-      controls={controls}
-      precision={precision}
-      parser={parser}
-      changeOnBlur={false}
-      formatter={formatter}
-      inputMode={allowDecimal ? 'decimal' : 'numeric'}
-      onKeyDown={handleKeyDown}
-      onPaste={handlePaste}
-      onChange={(v) => {
-        // number | null
-        onChange?.(v);
-      }}
-    />
+    <div style={{ position: 'relative', display: 'inline-block', width: style?.width ?? '100%' }}>
+      <InputNumber<number>
+        {...rest}
+        ref={inputNumberRef}
+        value={mergedValue}
+        controls={controls}
+        precision={precision}
+        parser={parser}
+        changeOnBlur={false}
+        formatter={formatter}
+        inputMode={allowDecimal ? 'decimal' : 'numeric'}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        onChange={(v) => {
+          // number | null
+          handleValueChange(v);
+        }}
+        style={{
+          ...style,
+          width: style?.width ?? '100%',
+          paddingRight: allowClear ? 28 : style?.paddingRight,
+        }}
+      />
+
+      {allowClear && hasValue ? (
+        <span
+          onMouseDown={(e) => {
+            e.preventDefault();
+          }}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            handleValueChange(null);
+          }}
+          style={{
+            position: 'absolute',
+            right: controls ? 28 : 10,
+            top: '50%',
+            transform: 'translateY(-50%)',
+            display: 'inline-flex',
+            alignItems: 'center',
+            cursor: 'pointer',
+            color: 'rgba(0, 0, 0, 0.25)',
+            zIndex: 2,
+          }}
+        >
+          <CloseCircleFilled />
+        </span>
+      ) : null}
+    </div>
   );
 };
 

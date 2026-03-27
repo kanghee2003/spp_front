@@ -126,11 +126,11 @@ const ComponentSample = () => {
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
           <Col span={3}>Input Number</Col>
           <Col span={6}>
-            <SppInputNumber controls={false} />
+            <SppInputNumber controls={false} allowClear />
           </Col>
           <Col span={3}>Input Number Form</Col>
           <Col span={6}>
-            <SppInputNumberForm name="inputnumber" controls={false} control={sampleControl} />
+            <SppInputNumberForm name="inputnumber" controls={false} control={sampleControl} allowClear />
           </Col>
         </Row>
         <Row gutter={[16, 16]} style={{ marginBottom: 16 }}>
