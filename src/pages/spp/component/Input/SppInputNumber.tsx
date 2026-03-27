@@ -203,7 +203,7 @@ const SppInputNumber = (props: SppInputNumberProps) => {
         }}
       />
 
-      {allowClear && hasValue ? (
+      {allowClear && hasValue && !props.readOnly && !props.disabled ? (
         <span
           onMouseDown={(e) => {
             e.preventDefault();
