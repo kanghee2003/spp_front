@@ -245,6 +245,7 @@ const ComponentSample = () => {
               onSelect={(value, item) => {
                 console.log(value, item);
               }}
+              allowClear
               showSearch={{
                 filterOption: (input, option) =>
                   String(option?.label ?? '')

@@ -224,7 +224,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
         setDisplayValue('');
         setSearchValue('');
         setOpen(false);
-        props.onChange?.(undefined as any);
+        props.onChange?.(null as any);
       }}
       onKeyDown={(e) => {
         if (e.key !== 'Enter') return;
@@ -284,7 +284,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
         if (q.trim().length === 0) {
           setSearchValue('');
           setOpen(false);
-          props.onChange?.(undefined as any);
+          props.onChange?.(null as any);
           return;
         }
 

@@ -17,17 +17,30 @@ const pathToString = (path: Path): string =>
     return acc ? `${acc}.${cur}` : cur;
   }, '');
 
-const isEmpty = (v: unknown) => v === null || v === undefined || (typeof v === 'string' && v.trim() === '');
+const isEmpty = (value: unknown): boolean => value === null || value === undefined || (typeof value === 'string' && value.trim() === '');
 
-const isExcludedPath = (fullPath: string, excludePaths: string[]) =>
-  excludePaths.some((p) => fullPath === p || fullPath.startsWith(`${p}.`) || fullPath.startsWith(`${p}[`));
+const isExcludedPath = (fullPath: string, excludePaths: string[]): boolean => {
+  const lastKey = fullPath.split('.').pop();
 
-export const validateRequiredDeep = (value: unknown, ctx: z.RefinementCtx, path: Path = [], options: ValidateRequiredOptions = {}) => {
+  return excludePaths.some((p) => {
+    if (fullPath === p || fullPath.startsWith(`${p}.`) || fullPath.startsWith(`${p}[`)) {
+      return true;
+    }
+
+    if (lastKey === p) {
+      return true;
+    }
+
+    return false;
+  });
+};
+
+export const validateRequiredDeep = (value: unknown, ctx: z.RefinementCtx, path: Path = [], options: ValidateRequiredOptions = {}): void => {
   const { excludePaths = [], message = DEFAULT_MESSAGE } = options;
 
   if (Array.isArray(value)) {
-    value.forEach((item, i) => {
-      validateRequiredDeep(item, ctx, [...path, i], options);
+    value.forEach((item, index) => {
+      validateRequiredDeep(item, ctx, [...path, index], options);
     });
     return;
   }
@@ -37,7 +50,9 @@ export const validateRequiredDeep = (value: unknown, ctx: z.RefinementCtx, path:
       const currentPath = [...path, key];
       const fullPath = pathToString(currentPath);
 
-      if (isExcludedPath(fullPath, excludePaths)) return;
+      if (isExcludedPath(fullPath, excludePaths)) {
+        return;
+      }
 
       if (isEmpty(val)) {
         ctx.addIssue({
