@@ -1,5 +1,5 @@
 import { AutoComplete, AutoCompleteProps, Spin } from 'antd';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { SppAutoCompleteApi } from '../../api/cm/SppAutoComplete.api';
 import { SppAutoCompleteService } from '../../service/cm/SppAutoComplete.service';
 import { AutoCompleteMode as SppAutoCompleteMode } from '../../type/cm/AutoComplete.type';
@@ -11,7 +11,11 @@ export interface SppAutocompleteProps extends AutoCompleteProps {
   label?: string;
 }
 
-const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
+export interface SppCustomAutoCompleteRef {
+  selectFocusedItem: () => boolean;
+}
+
+const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocompleteProps>((props, ref) => {
   // mode가 없으면 "기본 AutoComplete"로 동작 (props/options 기반)
   if (props.mode === undefined) {
     return <AutoComplete {...props} />;
@@ -34,6 +38,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
 
   // 초기 keyValue 동기화 중복 방지
   const lastSyncedKeyRef = useRef<string | null>(null);
+  const hasKeyboardNavigatedRef = useRef(false);
 
   const userQuery = SppAutoCompleteService().getAutoCompleteUserList({
     query: searchValue,
@@ -99,6 +104,65 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
 
     return items;
   }, [query.data, mode]);
+
+  const applyPickedOption = (picked: any): boolean => {
+    const pickedDisplayValue = picked?.value;
+    const keyValue = picked?.keyValue;
+
+    if (pickedDisplayValue === undefined) return false;
+
+    setSuppressNextOpen(true);
+    setOpen(false);
+    hasKeyboardNavigatedRef.current = false;
+
+    // 표시값 세팅
+    setDisplayValue(String(pickedDisplayValue ?? ''));
+    // 검색어는 비워서 불필요한 재조회 방지
+    setSearchValue('');
+
+    if (keyValue !== undefined) {
+      lastSyncedKeyRef.current = String(keyValue);
+      props.onChange?.(keyValue);
+    }
+
+    props.onSelect?.(pickedDisplayValue, picked);
+    return true;
+  };
+
+  const findFocusedOption = (): any | null => {
+    const dropdownRoot = document.querySelector(`.${instanceCls}`);
+    if (!dropdownRoot) return null;
+
+    const activeEl = dropdownRoot.querySelector('.ant-select-item-option-active') || dropdownRoot.querySelector('.ant-select-item-option-selected');
+    if (!activeEl) return null;
+
+    const optionNodes = Array.from(dropdownRoot.querySelectorAll('.ant-select-item-option'));
+    const domIndex = optionNodes.findIndex((node) => node === activeEl);
+
+    if (domIndex < 0) return null;
+
+    return options[domIndex] ?? null;
+  };
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      selectFocusedItem: () => {
+        if (!open) return false;
+        if (!options || options.length === 0) return false;
+
+        if (hasKeyboardNavigatedRef.current) {
+          const picked = findFocusedOption();
+          if (picked) {
+            return applyPickedOption(picked);
+          }
+        }
+
+        return applyPickedOption(options[0]);
+      },
+    }),
+    [open, options],
+  );
 
   /**
    *  RHF에서 value로 넘어오는 값은 keyValue(userId/orgCd) 만 존재
@@ -214,12 +278,16 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
     <AutoComplete
       {...props}
       open={open}
-      onOpenChange={setOpen}
+      onOpenChange={(nextOpen) => {
+        hasKeyboardNavigatedRef.current = false;
+        setOpen(nextOpen);
+      }}
       options={options}
       value={displayValue}
       popupMatchSelectWidth={false}
       onClear={() => {
         lastSyncedKeyRef.current = null;
+        hasKeyboardNavigatedRef.current = false;
         setSuppressNextOpen(false);
         setDisplayValue('');
         setSearchValue('');
@@ -227,6 +295,11 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
         props.onChange?.(null as any);
       }}
       onKeyDown={(e) => {
+        if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+          hasKeyboardNavigatedRef.current = true;
+          return;
+        }
+
         if (e.key !== 'Enter') return;
         if (!open) return;
         if (!options || options.length === 0) return;
@@ -234,36 +307,18 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
         const nativeEvent: any = (e as any).nativeEvent;
         if (nativeEvent?.isComposing) return;
 
-        const dropdownRoot = document.querySelector(`.${instanceCls}`);
-        if (!dropdownRoot) return;
-
-        const activeEl = dropdownRoot.querySelector('.ant-select-item-option-active') || dropdownRoot.querySelector('.ant-select-item-option-selected');
-
-        if (activeEl) return;
-
         e.preventDefault();
         e.stopPropagation();
 
-        const picked: any = options[0];
-        const pickedDisplayValue = picked?.value;
-        const keyValue = picked?.keyValue;
-
-        if (pickedDisplayValue === undefined) return;
-
-        setSuppressNextOpen(true);
-        setOpen(false);
-
-        // 표시값 세팅
-        setDisplayValue(String(pickedDisplayValue ?? ''));
-        // 검색어는 비워서 불필요한 재조회 방지
-        setSearchValue('');
-
-        if (keyValue !== undefined) {
-          lastSyncedKeyRef.current = String(keyValue);
-          props.onChange?.(keyValue);
+        if (hasKeyboardNavigatedRef.current) {
+          const picked = findFocusedOption();
+          if (picked) {
+            applyPickedOption(picked);
+            return;
+          }
         }
 
-        props.onSelect?.(pickedDisplayValue, picked);
+        applyPickedOption(options[0]);
       }}
       onChange={(v) => {
         const q = String(v ?? '');
@@ -274,8 +329,9 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
         // 옵션 선택/Enter 자동선택 후 onChange가 한 번 더 타면서 다시 open 되는 현상 방지
         if (suppressNextOpen) {
           setSuppressNextOpen(false);
-          return;
         }
+
+        hasKeyboardNavigatedRef.current = false;
 
         // 사용자가 입력 시작하면 초기 동기화 다시 허용(다음 value 변경 시)
         lastSyncedKeyRef.current = null;
@@ -295,23 +351,7 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
       }}
       onSelect={(val, option) => {
         const opt: any = option as any;
-        const keyValue = opt?.keyValue;
-
-        setSuppressNextOpen(true);
-        setOpen(false);
-
-        // input에는 표시값 유지
-        setDisplayValue(String(val ?? ''));
-        // 검색어는 비워서 불필요한 재조회 방지
-        setSearchValue('');
-
-        // RHF에는 keyValue만 전달
-        if (keyValue !== undefined) {
-          lastSyncedKeyRef.current = String(keyValue);
-          props.onChange?.(keyValue);
-        }
-
-        props.onSelect?.(val, option);
+        applyPickedOption(opt);
       }}
       onPopupScroll={(e) => {
         const el = e.target as HTMLDivElement;
@@ -336,6 +376,6 @@ const SppCustomAutoComplete = (props: SppAutocompleteProps) => {
       style={{ width: '150px' }}
     />
   );
-};
+});
 
 export default SppCustomAutoComplete;

@@ -1,5 +1,5 @@
 import { Card, Col, DatePicker, Row, Typography } from 'antd';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import SppButton from '../../component/Button/SppButton';
 import SppInputNumber from '../../component/Input/SppInputNumber';
@@ -13,7 +13,7 @@ import SppInputTextForm from '../../component/Input/SppInputTextForm';
 import SppInputNumberForm from '../../component/Input/SppInputNumberForm';
 import { useMessage } from '@/hook/useMessage';
 import SppDatePickerForm from '../../component/DatePicker/SppDatePickerForm';
-import SppAutoComplete from '../../component/AutoComplete/SppAutoComplete';
+import SppAutoComplete, { SppCustomAutoCompleteRef } from '../../component/AutoComplete/SppAutoComplete';
 import { useMdiStore } from '@/store/mdi.store';
 import { useMdiContext } from '@/hook/useMdiContext';
 import { ComponentSampleOptions, ExcelUploadList, ExcelUploadRowScheme } from '../../type/ComponentSample.type';
@@ -44,6 +44,7 @@ const ComponentSample = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isExcelOpen, setIsExcelOpen] = useState(false);
   const [excelRows, setExcelRows] = useState<ExcelUploadList>([]);
+  const autoCompleteRef = useRef<SppCustomAutoCompleteRef>(null);
 
   const handleExcelUploaded = (list: ExcelUploadList) => {
     setExcelRows(list);
@@ -332,11 +333,20 @@ const ComponentSample = () => {
           <Col span={3}>자동완성 사용자 Form</Col>
           <Col span={6}>
             <SppAutoCompleteForm
+              ref={autoCompleteRef}
               name="autocomplete"
               control={sampleControl}
               mode={AutoCompleteMode.USER}
               onSelect={(value, options) => console.log(value, options)}
             />
+            <SppButton
+              onMouseDown={(e) => {
+                e.preventDefault();
+                autoCompleteRef.current?.selectFocusedItem();
+              }}
+            >
+              x
+            </SppButton>
           </Col>
         </Row>
       </Card>

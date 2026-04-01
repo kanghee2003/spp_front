@@ -6,9 +6,10 @@ import { z } from 'zod';
 import SppButton from '../../component/Button/SppButton';
 import SppFileUploaderForm from '../../component/FileUploader/SppFileUploaderForm';
 import { SampleFileApi } from '../../api/SampleFile.api';
-import { SampleFileUploadFormSchema, type SampleFileUploadFormValues, type SampleFileUploadResult } from '../../type/sample/SampleFileUpload.type';
-import { joinFiles } from '@/utils/common.util';
+
 import { downloadFile } from '@/utils/download.util';
+import { SampleFileUploadFormSchema, SampleFileUploadFormValues, SampleFileUploadResult } from '../../type/sample/SampleFileUpload.type';
+import { joinFiles } from '@/utils/file.util';
 
 const { Title, Text } = Typography;
 
