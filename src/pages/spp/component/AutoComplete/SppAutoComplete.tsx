@@ -16,11 +16,6 @@ export interface SppCustomAutoCompleteRef {
 }
 
 const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocompleteProps>((props, ref) => {
-  // mode가 없으면 "기본 AutoComplete"로 동작 (props/options 기반)
-  if (props.mode === undefined) {
-    return <AutoComplete {...props} />;
-  }
-
   const mode = props.mode;
   const [open, setOpen] = useState(false);
 
@@ -52,6 +47,10 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
   const query = mode === SppAutoCompleteMode.USER ? userQuery : orgQuery;
 
   const options: any[] = useMemo(() => {
+    if (mode === undefined) {
+      return (props.options as any[]) ?? [];
+    }
+
     const pages = query.data?.pages ?? [];
     const items: any[] = pages.flatMap((p) => p.items ?? []);
 
@@ -103,7 +102,7 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
     }
 
     return items;
-  }, [query.data, mode]);
+  }, [mode, props.options, query.data]);
 
   const applyPickedOption = (picked: any): boolean => {
     const pickedDisplayValue = picked?.value;
@@ -119,6 +118,12 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
     setDisplayValue(String(pickedDisplayValue ?? ''));
     // 검색어는 비워서 불필요한 재조회 방지
     setSearchValue('');
+
+    if (mode === undefined) {
+      props.onChange?.(pickedDisplayValue as any);
+      props.onSelect?.(pickedDisplayValue, picked);
+      return true;
+    }
 
     if (keyValue !== undefined) {
       lastSyncedKeyRef.current = String(keyValue);
@@ -170,6 +175,12 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
    * -> 이때 searchValue는 건드리지 않아서, 표시값으로 검색이 재실행되는 문제를 막는다.
    */
   useEffect(() => {
+    if (mode === undefined) {
+      const raw = props.value;
+      setDisplayValue(raw === undefined || raw === null ? '' : String(raw));
+      return;
+    }
+
     const raw = props.value;
 
     if (raw === undefined || raw === null || String(raw).trim().length === 0) {
@@ -333,6 +344,18 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
 
         hasKeyboardNavigatedRef.current = false;
 
+        if (mode === undefined) {
+          props.onChange?.(v as any);
+
+          if (q.trim().length === 0) {
+            setOpen(false);
+            return;
+          }
+
+          if (!open && q.trim().length > 0) setOpen(true);
+          return;
+        }
+
         // 사용자가 입력 시작하면 초기 동기화 다시 허용(다음 value 변경 시)
         lastSyncedKeyRef.current = null;
 
@@ -351,6 +374,16 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
       }}
       onSelect={(val, option) => {
         const opt: any = option as any;
+
+        if (mode === undefined) {
+          setSuppressNextOpen(true);
+          setOpen(false);
+          setDisplayValue(String(val ?? ''));
+          props.onChange?.(val as any);
+          props.onSelect?.(val, option);
+          return;
+        }
+
         applyPickedOption(opt);
       }}
       onPopupScroll={(e) => {
@@ -358,7 +391,7 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
         const threshold = 40;
         const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
 
-        if (nearBottom && query.hasNextPage && !query.isFetchingNextPage) {
+        if (mode !== undefined && nearBottom && query.hasNextPage && !query.isFetchingNextPage) {
           query.fetchNextPage();
         }
       }}
@@ -367,7 +400,11 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
           <div className={instanceCls} style={{ minWidth: 320 }}>
             {menu}
             <div style={{ padding: 8, textAlign: 'center' }}>
-              {query.isLoading || query.isFetchingNextPage || query.isFetching ? <Spin size="small" /> : !query.hasNextPage ? '마지막 입니다.' : null}
+              {mode !== undefined && (query.isLoading || query.isFetchingNextPage || query.isFetching) ? (
+                <Spin size="small" />
+              ) : mode !== undefined && !query.hasNextPage ? (
+                '마지막 입니다.'
+              ) : null}
             </div>
           </div>
         );

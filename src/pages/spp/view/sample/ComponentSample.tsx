@@ -239,6 +239,7 @@ const ComponentSample = () => {
           <Col span={6}>
             {' '}
             <SppAutoCompleteForm
+              ref={autoCompleteRef}
               name="autocomplete"
               control={sampleControl}
               style={{ width: '150px' }}
@@ -333,7 +334,6 @@ const ComponentSample = () => {
           <Col span={3}>자동완성 사용자 Form</Col>
           <Col span={6}>
             <SppAutoCompleteForm
-              ref={autoCompleteRef}
               name="autocomplete"
               control={sampleControl}
               mode={AutoCompleteMode.USER}
