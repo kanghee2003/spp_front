@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
-import type { Key, ReactElement } from 'react';
+import type { Key, ReactElement, Ref } from 'react';
 
 import { IudType } from '@/type/common.type';
 import { CheckCircleOutlined, DeleteOutlined, EditOutlined, PlusCircleOutlined } from '@ant-design/icons';
@@ -21,6 +21,15 @@ interface SppTableProps<T extends object = any> extends Omit<TableProps<T>, 'pag
   autoSelectFirstRow?: boolean;
   paginationResetKey?: any;
   paginationFlag?: boolean;
+}
+
+export interface SppTableRef<T extends object = any> {
+  getPagedData: () => T[];
+  resetPagination: () => void;
+  scrollToFocusedRow: (opts?: { behavior?: ScrollBehaviorType }) => boolean;
+  scrollToRowIndex: (index: number, opts?: { behavior?: ScrollBehaviorType }) => boolean;
+  selectRowIndex: (index: number | undefined) => boolean;
+  getSelectedRowIndex: () => number | undefined;
 }
 
 interface SppPageParam {
@@ -64,7 +73,7 @@ function hasColumnKey(columns: any[] | undefined, key: string) {
     .includes(key as any);
 }
 
-const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, ref: any) => {
+const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, ref: Ref<SppTableRef<T>>) => {
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const tableRef = useRef<any>(null);
   const prevDataSourceRef = useRef<any>(null);
@@ -460,6 +469,6 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
       {renderServerPagination()}
     </div>
   );
-}) as <T extends object = any>(props: SppTableProps<T> & { ref?: any }) => ReactElement;
+}) as <T extends object = any>(props: SppTableProps<T> & { ref?: Ref<SppTableRef<T>> }) => ReactElement;
 
 export default SppTable;
