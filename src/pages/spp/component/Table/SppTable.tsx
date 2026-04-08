@@ -44,7 +44,7 @@ const rowNoColumns: ColumnsType<any> = [
     dataIndex: 'rowNo',
     key: 'rowNo',
     align: 'center',
-    width: '60px',
+    width: 60,
   },
 ];
 
