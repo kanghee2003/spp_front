@@ -30,7 +30,7 @@ function getCellText(children: React.ReactNode): string | null {
 function buildEllipsisOption(v: any) {
   if (v === true) return { showTitle: false };
   if (typeof v === 'object' && v) return { showTitle: false, ...v };
-  return { showTitle: false };
+  return v;
 }
 
 export function withEllipsisNoTitle<T extends object = any>(columns: ColumnsType<T>): ColumnsType<T> {
@@ -39,7 +39,14 @@ export function withEllipsisNoTitle<T extends object = any>(columns: ColumnsType
       if (!col) return col;
 
       if (Array.isArray(col.children) && col.children.length > 0) {
-        return { ...col, children: mapColumns(col.children) };
+        return {
+          ...col,
+          children: mapColumns(col.children),
+        };
+      }
+
+      if (col.ellipsis === undefined) {
+        return col;
       }
 
       return {
@@ -53,12 +60,16 @@ export function withEllipsisNoTitle<T extends object = any>(columns: ColumnsType
 }
 
 export const SppEllipsisTooltipCell = (props: SppTdProps) => {
+  const { children, ...rest } = props;
+
   const spanRef = useRef<HTMLSpanElement | null>(null);
   const [overflow, setOverflow] = useState(false);
 
-  const text = getCellText(props.children);
+  const text = getCellText(children);
 
   useLayoutEffect(() => {
+    if (text === null) return;
+
     const el = spanRef.current;
     if (!el) return;
 
@@ -75,16 +86,14 @@ export const SppEllipsisTooltipCell = (props: SppTdProps) => {
   }, [text]);
 
   return text ? (
-    <td {...props}>
-      <div className="spp-cell-wrap">
-        <Tooltip title={text} open={overflow ? undefined : false} destroyOnHidden getPopupContainer={() => document.body}>
-          <span ref={spanRef} className="spp-cell-ellipsis">
-            {text}
-          </span>
-        </Tooltip>
-      </div>
+    <td {...rest}>
+      <Tooltip title={text} open={overflow ? undefined : false} destroyOnHidden getPopupContainer={() => document.body}>
+        <span ref={spanRef} className="spp-cell-ellipsis">
+          {text}
+        </span>
+      </Tooltip>
     </td>
   ) : (
-    <td {...props} />
+    <td {...rest}>{children}</td>
   );
 };
