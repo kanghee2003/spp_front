@@ -156,11 +156,9 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
         if (!open) return false;
         if (!options || options.length === 0) return false;
 
-        if (hasKeyboardNavigatedRef.current) {
-          const picked = findFocusedOption();
-          if (picked) {
-            return applyPickedOption(picked);
-          }
+        const picked = findFocusedOption();
+        if (picked) {
+          return applyPickedOption(picked);
         }
 
         return applyPickedOption(options[0]);
@@ -321,12 +319,10 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
         e.preventDefault();
         e.stopPropagation();
 
-        if (hasKeyboardNavigatedRef.current) {
-          const picked = findFocusedOption();
-          if (picked) {
-            applyPickedOption(picked);
-            return;
-          }
+        const picked = findFocusedOption();
+        if (picked) {
+          applyPickedOption(picked);
+          return;
         }
 
         applyPickedOption(options[0]);
