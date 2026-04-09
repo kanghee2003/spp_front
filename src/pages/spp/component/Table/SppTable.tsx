@@ -413,6 +413,10 @@ const SppTable = forwardRef(<T extends object = any>(props: SppTableProps<T>, re
   }, [props.paginationResetKey]);
 
   useEffect(() => {
+    autoClickRef.current = false;
+  }, [props.dataSource]);
+
+  useEffect(() => {
     const handleResize = () => {
       const windowHeight = window.innerHeight;
       const availableHeight = windowHeight * 0.55;
