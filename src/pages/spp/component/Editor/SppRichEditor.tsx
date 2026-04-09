@@ -62,6 +62,7 @@ export type SppRichEditorProps = {
   headers?: Record<string, string>;
   readOnly?: boolean;
   height?: number | string;
+  placeholder?: string;
 };
 
 const SppRichEditor = ({
@@ -72,6 +73,7 @@ const SppRichEditor = ({
   headers,
   readOnly = false,
   height = 520,
+  placeholder = '',
 }: SppRichEditorProps) => {
   const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '');
   const [initialHtml] = useState(() => defaultHtml);
@@ -118,6 +120,7 @@ const SppRichEditor = ({
     return {
       readonly: readOnly,
       height,
+      placeholder,
       buttons: [
         'bold',
         'italic',
@@ -213,7 +216,7 @@ const SppRichEditor = ({
         },
       },
     };
-  }, [readOnly, height, uploadUrl, withCredentials, reqHeaders, csrfHeaders, API_BASE]);
+  }, [readOnly, height, placeholder, uploadUrl, withCredentials, reqHeaders, csrfHeaders, API_BASE]);
 
   return (
     <JoditEditor
