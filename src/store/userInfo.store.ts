@@ -4,6 +4,6 @@ import { create } from 'zustand';
 
 type UserInfoStore = {
   userInfo?: UserInfo;
-  setUserInfo: (state: UserInfo) => void;
+  setUserInfo: (state: UserInfo | undefined) => void;
 };
 export const useUserInfoStore = create<UserInfoStore>((set) => ({ userInfo: undefined, setUserInfo: (state) => set({ userInfo: state }) }));
