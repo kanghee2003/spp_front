@@ -15,6 +15,8 @@ export interface SppCustomAutoCompleteRef {
   selectFocusedItem: () => boolean;
 }
 
+const PAGE_SIZE = 50;
+
 const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocompleteProps>((props, ref) => {
   const mode = props.mode;
   const [open, setOpen] = useState(false);
@@ -27,6 +29,8 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
 
   // 옵션 선택 직후 onChange가 한번 더 타면서 다시 open 되는 현상 방지용
   const [suppressNextOpen, setSuppressNextOpen] = useState(false);
+
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
 
   const instanceClsRef = useRef(`spp-ac-${Math.random().toString(36).slice(2, 10)}`);
   const instanceCls = instanceClsRef.current;
@@ -46,9 +50,27 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
 
   const query = mode === SppAutoCompleteMode.USER ? userQuery : orgQuery;
 
+  const filteredOptions: any[] = useMemo(() => {
+    if (mode !== undefined) {
+      return [];
+    }
+
+    const rawOptions = (props.options as any[]) ?? [];
+    const keyword = displayValue.trim().toLowerCase();
+
+    if (keyword.length < 1) {
+      return [];
+    }
+
+    return rawOptions.filter((option) => {
+      const label = String(option?.label ?? option?.value ?? '').toLowerCase();
+      return label.includes(keyword);
+    });
+  }, [mode, props.options, displayValue]);
+
   const options: any[] = useMemo(() => {
     if (mode === undefined) {
-      return (props.options as any[]) ?? [];
+      return filteredOptions.slice(0, visibleCount);
     }
 
     const pages = query.data?.pages ?? [];
@@ -102,7 +124,7 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
     }
 
     return items;
-  }, [mode, props.options, query.data]);
+  }, [mode, query.data, filteredOptions, visibleCount]);
 
   const applyPickedOption = (picked: any): boolean => {
     const pickedDisplayValue = picked?.value;
@@ -261,6 +283,11 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
     };
   }, [props.value, mode]);
 
+  useEffect(() => {
+    if (mode !== undefined) return;
+    setVisibleCount(PAGE_SIZE);
+  }, [mode, displayValue]);
+
   // 검색어가 바뀌면 드롭다운 스크롤을 첫 항목으로 올림 (searchValue 기준)
   useEffect(() => {
     if (!open) return;
@@ -281,7 +308,7 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
     }, 0);
 
     return () => window.clearTimeout(t);
-  }, [searchValue, open, instanceCls, suppressNextOpen]);
+  }, [searchValue, open, instanceCls, suppressNextOpen, visibleCount]);
 
   return (
     <AutoComplete
@@ -300,6 +327,7 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
         setSuppressNextOpen(false);
         setDisplayValue('');
         setSearchValue('');
+        setVisibleCount(PAGE_SIZE);
         setOpen(false);
         props.onChange?.(null as any);
       }}
@@ -343,12 +371,13 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
         if (mode === undefined) {
           props.onChange?.(v as any);
 
-          if (q.trim().length === 0) {
+          if (q.trim().length < 1) {
+            setVisibleCount(PAGE_SIZE);
             setOpen(false);
             return;
           }
 
-          if (!open && q.trim().length > 0) setOpen(true);
+          if (!open) setOpen(true);
           return;
         }
 
@@ -387,7 +416,14 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
         const threshold = 40;
         const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - threshold;
 
-        if (mode !== undefined && nearBottom && query.hasNextPage && !query.isFetchingNextPage) {
+        if (mode === undefined) {
+          if (nearBottom && visibleCount < filteredOptions.length) {
+            setVisibleCount((prev) => Math.min(prev + PAGE_SIZE, filteredOptions.length));
+          }
+          return;
+        }
+
+        if (nearBottom && query.hasNextPage && !query.isFetchingNextPage) {
           query.fetchNextPage();
         }
       }}
