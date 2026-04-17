@@ -308,7 +308,7 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
     }, 0);
 
     return () => window.clearTimeout(t);
-  }, [searchValue, open, instanceCls, suppressNextOpen, visibleCount]);
+  }, [searchValue, displayValue, open, instanceCls, suppressNextOpen, visibleCount]);
 
   return (
     <AutoComplete
@@ -370,9 +370,9 @@ const SppCustomAutoComplete = forwardRef<SppCustomAutoCompleteRef, SppAutocomple
 
         if (mode === undefined) {
           props.onChange?.(v as any);
+          setVisibleCount(PAGE_SIZE);
 
           if (q.trim().length < 1) {
-            setVisibleCount(PAGE_SIZE);
             setOpen(false);
             return;
           }
