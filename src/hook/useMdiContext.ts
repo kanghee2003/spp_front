@@ -43,7 +43,6 @@ export type MdiContext = {
   tabKey?: string;
   params?: any;
 };
-
 export function useMdiContext(): MdiContext {
   const pageKey = usePageKey();
   const activeKey = useMdiStore((s) => s.activeKey);
@@ -59,12 +58,14 @@ export function useMdiContext(): MdiContext {
     return pageKey;
   })();
 
+  const viewActiveTab = useMdiStore((s) => s.getViewActiveTab(viewKey));
+
   const tabKey = (() => {
     if (pageKey) {
       const node = findNodeByKey(menuTree, pageKey);
       if (node?.type === MenuType.TAB) return pageKey;
     }
-    return useMdiStore.getState().getViewActiveTab(viewKey);
+    return viewActiveTab;
   })();
 
   const viewParams = useMdiStore((s) => s.getTabParams(viewKey));

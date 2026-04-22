@@ -102,19 +102,24 @@ const SppPageTabs = ({ onChange }: SppPageTabsProps) => {
 
     if (tabKey && tabKeyList.includes(tabKey)) {
       setActiveTabKey(tabKey);
+      if (viewKey) setViewActiveTab(viewKey, tabKey);
       return;
     }
 
     if (!activeTabKey) {
-      setActiveTabKey(tabKeyList[0]);
+      const firstKey = tabKeyList[0];
+      setActiveTabKey(firstKey);
+      if (viewKey) setViewActiveTab(viewKey, firstKey);
       return;
     }
 
     const exists = tabKeyList.includes(activeTabKey);
     if (!exists) {
-      setActiveTabKey(tabKeyList[0]);
+      const firstKey = tabKeyList[0];
+      setActiveTabKey(firstKey);
+      if (viewKey) setViewActiveTab(viewKey, firstKey);
     }
-  }, [activeTabKey, tabKey, tabKeyList]);
+  }, [activeTabKey, tabKey, tabKeyList, viewKey, setViewActiveTab]);
 
   // activeTabKey 변경을 화면단에서 받을 수 있게
   useEffect(() => {
