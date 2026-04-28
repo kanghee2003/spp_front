@@ -1,6 +1,6 @@
 import { LeftOutlined, RightOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
-import { Card, Space, Typography } from 'antd';
+import { Card, Space, Tooltip, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 import SppButton from '../../component/Button/SppButton';
 
@@ -40,13 +40,13 @@ const DashboardReasonChartSection = () => {
 
   const current = monthData[monthIndex];
   const total = current.unregistered + current.completed + current.pending;
-  const unregisteredPercent = Math.round((current.unregistered / total) * 100);
+  const unregisteredPercent = total === 0 ? 0 : Math.round((current.unregistered / total) * 100);
 
   const titleText = useMemo(() => {
     if (total === 0) return '미등록 0%';
 
     return `미등록 ${unregisteredPercent}%`;
-  }, [current.unregistered, total]);
+  }, [total, unregisteredPercent]);
 
   const donutStyle = useMemo(() => {
     if (total === 0) {
@@ -119,36 +119,48 @@ const DashboardReasonChartSection = () => {
         >
           <Text style={{ fontSize: 13, fontWeight: 600 }}>{titleText}</Text>
 
-          <div
-            style={{
-              width: 118,
-              height: 118,
-              borderRadius: '50%',
-              ...donutStyle,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              position: 'relative',
-            }}
+          <Tooltip
+            title={
+              <div>
+                <div>미등록: {current.unregistered}</div>
+                <div>완료: {current.completed}</div>
+                <div>미결재: {current.pending}</div>
+                <div>전체: {total}</div>
+              </div>
+            }
           >
             <div
               style={{
-                width: 72,
-                height: 72,
+                width: 118,
+                height: 118,
                 borderRadius: '50%',
-                background: '#fff',
+                ...donutStyle,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                flexDirection: 'column',
-                boxShadow: 'inset 0 0 0 1px #f0f0f0',
+                position: 'relative',
+                cursor: 'pointer',
               }}
             >
-              <Text strong style={{ fontSize: 16, lineHeight: 1 }}>
-                {`${unregisteredPercent}%`}
-              </Text>
+              <div
+                style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: '50%',
+                  background: '#fff',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexDirection: 'column',
+                  boxShadow: 'inset 0 0 0 1px #f0f0f0',
+                }}
+              >
+                <Text strong style={{ fontSize: 16, lineHeight: 1 }}>
+                  {`${unregisteredPercent}%`}
+                </Text>
+              </div>
             </div>
-          </div>
+          </Tooltip>
 
           <div style={{ display: 'flex', justifyContent: 'center' }}>
             <Space size={12} wrap>
