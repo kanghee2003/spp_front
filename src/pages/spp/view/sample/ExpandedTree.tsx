@@ -32,9 +32,6 @@ type UserOption = {
   brName?: string;
 };
 
-const makeOrgKey = (brNo: string | number) => `ORG_${String(brNo).trim()}`;
-const makeUserKey = (jkwNo: string | number) => `USER_${String(jkwNo).trim()}`;
-
 /**
  * mock 조직 목록
  */
@@ -100,7 +97,7 @@ async function apiSearchUsers(keyword: string): Promise<User[]> {
 
 function orgToNode(org: Org): TreeNode {
   return {
-    key: makeOrgKey(org.brNo),
+    key: `ORG_${org.brNo}`,
     title: org.brName,
     nodeType: 'ORG',
     brNo: org.brNo,
@@ -113,7 +110,7 @@ function orgToNode(org: Org): TreeNode {
 
 function userToNode(user: User): TreeNode {
   return {
-    key: makeUserKey(user.jkwNo),
+    key: `USER_${user.jkwNo}`,
     title: user.jkwName,
     nodeType: 'USER',
     jkwNo: user.jkwNo,
@@ -177,13 +174,6 @@ export default function ControlledExpandTree() {
   const [userOptions, setUserOptions] = useState<UserOption[]>([]);
   const [userSearchLoading, setUserSearchLoading] = useState(false);
 
-  /**
-   * 자동완성 선택 후 이동할 사용자 key
-   *
-   * ref 대신 state로 관리해서 undefined 타이밍 문제를 줄임
-   */
-  const [pendingFocusKey, setPendingFocusKey] = useState<React.Key | null>(null);
-
   // 최신 treeData 참조용
   const treeDataRef = useRef<TreeNode[]>([]);
 
@@ -192,6 +182,12 @@ export default function ControlledExpandTree() {
 
   // 자동완성 검색 race 방지
   const searchSeqRef = useRef(0);
+
+  // 사용자 로딩 후 포커스 이동할 key
+  const pendingFocusKeyRef = useRef<React.Key | null>(null);
+
+  // pendingFocusKeyRef 변경 감지용
+  const [focusSeq, setFocusSeq] = useState(0);
 
   useEffect(() => {
     treeDataRef.current = treeData;
@@ -245,12 +241,10 @@ export default function ControlledExpandTree() {
         const users = await fetchOrgUsers(brNo);
         const children = users.map(userToNode);
 
+        // 자동완성 선택 후 바로 이동해야 하므로 startTransition 사용하지 않음
         setTreeData((prev) => {
           const next = updateTreeData(prev, orgKey, children);
-
-          // 바로 다음 로직에서 최신 treeData를 볼 수 있도록 같이 갱신
           treeDataRef.current = next;
-
           return next;
         });
       } catch (e) {
@@ -266,27 +260,30 @@ export default function ControlledExpandTree() {
    * treeData에 검색한 사용자가 실제로 붙은 뒤 scrollTo 처리
    */
   useEffect(() => {
-    if (pendingFocusKey == null) {
+    const focusKey = pendingFocusKeyRef.current;
+
+    if (!focusKey) {
       return;
     }
 
-    if (!hasTreeKey(treeData, pendingFocusKey)) {
+    // 아직 USER 노드가 treeData에 안 붙었으면 다음 treeData 변경 때 다시 시도
+    if (!hasTreeKey(treeData, focusKey)) {
       return;
     }
+
+    pendingFocusKeyRef.current = null;
 
     requestAnimationFrame(() => {
       requestAnimationFrame(() => {
-        setSelectedKeys([pendingFocusKey]);
+        setSelectedKeys([focusKey]);
 
         treeRef.current?.scrollTo?.({
-          key: pendingFocusKey,
+          key: focusKey,
           align: 'center',
         });
-
-        setPendingFocusKey(null);
       });
     });
-  }, [treeData, expandedKeys, pendingFocusKey]);
+  }, [treeData, expandedKeys, focusSeq]);
 
   /**
    * Tree expand 시 조직 사용자 조회
@@ -375,24 +372,19 @@ export default function ControlledExpandTree() {
    * 3. 해당 사용자로 scroll 이동
    */
   const handleSelectUser = useCallback(
-    async (_value: string, option: UserOption) => {
-      const selectedUser: User = {
-        jkwNo: option.jkwNo,
-        jkwName: option.jkwName,
-        brNo: option.brNo,
-        brName: option.brName,
-      };
+    async (value: string) => {
+      const selectedUser = MOCK_USERS.find((user) => user.jkwNo === value);
 
-      if (!selectedUser.brNo || !selectedUser.jkwNo) {
-        message.warning('선택한 사용자 정보가 올바르지 않습니다.');
+      if (!selectedUser) {
+        message.warning('선택한 사용자를 찾을 수 없습니다.');
         return;
       }
 
-      const orgKey = makeOrgKey(selectedUser.brNo);
-      const userKey = makeUserKey(selectedUser.jkwNo);
+      const orgKey = `ORG_${selectedUser.brNo}`;
+      const userKey = `USER_${selectedUser.jkwNo}`;
 
-      // 1. 해당 사용자로 이동 예약
-      setPendingFocusKey(userKey);
+      // 1. 먼저 포커스 대상 예약
+      pendingFocusKeyRef.current = userKey;
 
       // 2. 해당 조직 expand
       setExpandedKeys((prev) => {
@@ -405,6 +397,9 @@ export default function ControlledExpandTree() {
 
       // 3. expand 시와 동일하게 사용자 조회
       await loadOrgUser(selectedUser.brNo, orgKey);
+
+      // 4. 사용자 노드 렌더링 이후 포커스/스크롤 재시도
+      setFocusSeq((prev) => prev + 1);
     },
     [loadOrgUser],
   );
@@ -418,7 +413,6 @@ export default function ControlledExpandTree() {
   const collapseAll = useCallback(() => {
     setExpandedKeys([]);
     setSelectedKeys([]);
-    setPendingFocusKey(null);
   }, []);
 
   const height = 520;
