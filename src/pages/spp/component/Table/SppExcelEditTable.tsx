@@ -87,6 +87,8 @@ function normalizeMsExcelHyphenList(v: string): string {
 function normalizeSelectCompareValue(v: any): string {
   return String(v ?? '')
     .replace(/\u00a0/g, ' ')
+    .replace(/\u3000/g, ' ')
+    .replace(/\ufeff/g, '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n')
     .replace(/\n+/g, ' ')
@@ -94,54 +96,17 @@ function normalizeSelectCompareValue(v: any): string {
     .trim();
 }
 
-function getOptionLabelText(label: React.ReactNode): string {
-  if (typeof label === 'string' || typeof label === 'number') return String(label);
-  return '';
-}
-
 function findSelectOptionValue(options: { label: React.ReactNode; value: string }[] | undefined, value: any): string | undefined {
   const normalized = normalizeSelectCompareValue(value);
   if (!normalized) return undefined;
 
-  return (options ?? []).find((opt) => normalizeSelectCompareValue(getOptionLabelText(opt.label)) === normalized)?.value;
-}
+  const matchedByLabel = (options ?? []).find((opt) => normalizeSelectCompareValue(opt.label) === normalized);
+  if (matchedByLabel) return matchedByLabel.value;
 
-function parseMultiSelectOptionValues(options: { label: React.ReactNode; value: string }[] | undefined, value: any): string[] {
-  const normalizedInput = normalizeSelectCompareValue(value);
-  if (!normalizedInput) return [];
+  const matchedByValue = (options ?? []).find((opt) => normalizeSelectCompareValue(opt.value) === normalized);
+  if (matchedByValue) return matchedByValue.value;
 
-  const matchedSingleValue = findSelectOptionValue(options, normalizedInput);
-  if (matchedSingleValue) return [matchedSingleValue];
-
-  const candidates = (options ?? [])
-    .map((opt) => ({
-      value: opt.value,
-      normalized: normalizeSelectCompareValue(getOptionLabelText(opt.label)),
-    }))
-    .filter((opt) => !!opt.normalized)
-    .sort((a, b) => b.normalized.length - a.normalized.length);
-
-  let rest = normalizedInput;
-  const selectedValues: string[] = [];
-
-  while (rest) {
-    const matched = candidates.find((opt) => rest === opt.normalized || rest.startsWith(`${opt.normalized},`));
-
-    if (!matched) {
-      return normalizedInput
-        .split(',')
-        .map((x) => findSelectOptionValue(options, x))
-        .filter((x): x is string => !!x);
-    }
-
-    selectedValues.push(matched.value);
-
-    rest = rest.slice(matched.normalized.length);
-    if (rest.startsWith(',')) rest = rest.slice(1);
-    rest = rest.trim();
-  }
-
-  return selectedValues;
+  return undefined;
 }
 
 /* =========================
@@ -446,7 +411,18 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
       }
 
       if (c.type === 'multiSelect') {
-        const multiValue = Array.isArray(rawValue) ? rawValue : parseMultiSelectOptionValues(c.options, rawValue);
+        const matchedSingleValue = findSelectOptionValue(c.options, rawValue);
+
+        const multiValue = Array.isArray(rawValue)
+          ? rawValue
+          : matchedSingleValue
+            ? [matchedSingleValue]
+            : v
+              ? v
+                  .split(',')
+                  .map((x) => findSelectOptionValue(c.options, x))
+                  .filter((x): x is string => !!x)
+              : [];
 
         return (
           <Select
