@@ -1,5 +1,5 @@
 import type React from 'react';
-import { Button, Empty, Input, Table, Typography, message } from 'antd';
+import { Button, Empty, Input, Select, Table, Typography, message } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { generateUuidV4 } from '@/utils/common.util';
@@ -82,6 +82,66 @@ function normalizeMsExcelHyphenList(v: string): string {
   }
 
   return out.join('\n');
+}
+
+function normalizeSelectCompareValue(v: any): string {
+  return String(v ?? '')
+    .replace(/\u00a0/g, ' ')
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n')
+    .replace(/\n+/g, ' ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim();
+}
+
+function getOptionLabelText(label: React.ReactNode): string {
+  if (typeof label === 'string' || typeof label === 'number') return String(label);
+  return '';
+}
+
+function findSelectOptionValue(options: { label: React.ReactNode; value: string }[] | undefined, value: any): string | undefined {
+  const normalized = normalizeSelectCompareValue(value);
+  if (!normalized) return undefined;
+
+  return (options ?? []).find((opt) => normalizeSelectCompareValue(getOptionLabelText(opt.label)) === normalized)?.value;
+}
+
+function parseMultiSelectOptionValues(options: { label: React.ReactNode; value: string }[] | undefined, value: any): string[] {
+  const normalizedInput = normalizeSelectCompareValue(value);
+  if (!normalizedInput) return [];
+
+  const matchedSingleValue = findSelectOptionValue(options, normalizedInput);
+  if (matchedSingleValue) return [matchedSingleValue];
+
+  const candidates = (options ?? [])
+    .map((opt) => ({
+      value: opt.value,
+      normalized: normalizeSelectCompareValue(getOptionLabelText(opt.label)),
+    }))
+    .filter((opt) => !!opt.normalized)
+    .sort((a, b) => b.normalized.length - a.normalized.length);
+
+  let rest = normalizedInput;
+  const selectedValues: string[] = [];
+
+  while (rest) {
+    const matched = candidates.find((opt) => rest === opt.normalized || rest.startsWith(`${opt.normalized},`));
+
+    if (!matched) {
+      return normalizedInput
+        .split(',')
+        .map((x) => findSelectOptionValue(options, x))
+        .filter((x): x is string => !!x);
+    }
+
+    selectedValues.push(matched.value);
+
+    rest = rest.slice(matched.normalized.length);
+    if (rest.startsWith(',')) rest = rest.slice(1);
+    rest = rest.trim();
+  }
+
+  return selectedValues;
 }
 
 /* =========================
@@ -261,6 +321,8 @@ export type ExcelPasteUploadColumn<T extends object> = {
   width?: number | string;
   placeholder?: string;
   visible?: boolean;
+  type?: 'input' | 'select' | 'multiSelect';
+  options?: { label: React.ReactNode; value: string }[];
 };
 
 export type ExcelPasteUploadTableProps<T extends object> = {
@@ -352,16 +414,56 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
     }),
     render: (_: any, record: T, rowIndex: number) => {
       const key = c.dataIndex;
-      const v = String((record as any)[key] ?? '');
+      const rawValue = (record as any)[key];
+      const v = String(rawValue ?? '');
       const multiline = v.includes('\n');
 
       const cellKey = `${String((record as any)[INTERNAL_ROW_KEY])}_${String(key)}_${structVersion}`;
 
-      const setAt = (nv: string) => {
+      const setAt = (nv: any) => {
         const next = rowsState.slice();
         next[rowIndex] = { ...next[rowIndex], [key]: nv } as T;
         commitTyping(next);
       };
+
+      if (c.type === 'select') {
+        const selectValue = findSelectOptionValue(c.options, rawValue);
+
+        return (
+          <Select
+            key={cellKey}
+            value={selectValue}
+            placeholder={c.placeholder}
+            options={c.options ?? []}
+            style={{ width: '100%' }}
+            allowClear
+            onFocus={() => {
+              anchorRef.current = { row: rowIndex, col: colIndex };
+            }}
+            onChange={(nv) => setAt(nv ?? '')}
+          />
+        );
+      }
+
+      if (c.type === 'multiSelect') {
+        const multiValue = Array.isArray(rawValue) ? rawValue : parseMultiSelectOptionValues(c.options, rawValue);
+
+        return (
+          <Select
+            key={cellKey}
+            mode="multiple"
+            value={multiValue}
+            placeholder={c.placeholder}
+            options={c.options ?? []}
+            style={{ width: '100%' }}
+            allowClear
+            onFocus={() => {
+              anchorRef.current = { row: rowIndex, col: colIndex };
+            }}
+            onChange={(nv) => setAt(nv)}
+          />
+        );
+      }
 
       return multiline ? (
         <Input.TextArea
