@@ -444,7 +444,7 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
       return multiline ? (
         <Input.TextArea
           key={cellKey}
-          defaultValue={v}
+          value={v}
           placeholder={c.placeholder}
           rows={2}
           onFocus={() => {
@@ -455,7 +455,7 @@ const SppExcelEditTable = <T extends AnyRow>(props: ExcelPasteUploadTableProps<T
       ) : (
         <Input
           key={cellKey}
-          defaultValue={v}
+          value={v}
           placeholder={c.placeholder}
           onFocus={() => {
             anchorRef.current = { row: rowIndex, col: colIndex };
