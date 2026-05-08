@@ -19,6 +19,7 @@ type State = {
   tabs: MdiTab[];
   activeKey: string;
   openTab: (args: OpenTabArgs) => void;
+  setOpenTabErrorHandler: (handler?: (message: string) => void) => void;
   closeTab: (key: string) => void;
   resetTabs: () => void;
   setActive: (key: string) => void;
@@ -129,12 +130,20 @@ export const useMdiStore = create<State>((set, get) => ({
     }
   },
 
-  openTab: (args) =>
+  openTab: (args) => {
+    const tree = useMenuStore.getState().menuTree;
+    const node = findNodeByKey(tree, args.key);
+
+    if (!node) {
+      (get() as any)._openTabErrorHandler?.('접근 권한이 없거나 사용할 수 없는 메뉴입니다.');
+      return;
+    }
+
     set((state) => {
       const tree = useMenuStore.getState().menuTree;
       const node = findNodeByKey(tree, args.key);
 
-      const viewKey = node?.type === MenuType.TAB ? findParentViewKeyForTab(tree, args.key) ?? args.key : args.key;
+      const viewKey = node?.type === MenuType.TAB ? (findParentViewKeyForTab(tree, args.key) ?? args.key) : args.key;
       const title = resolveTitleByKey(viewKey);
 
       const exists = state.tabs.some((t) => t.key === viewKey);
@@ -188,7 +197,13 @@ export const useMdiStore = create<State>((set, get) => ({
         _paramsByKey: nextParamsByKey,
         _viewActiveTab: nextViewActiveTab,
       };
-    }),
+    });
+  },
+  setOpenTabErrorHandler: (handler) =>
+    set((state) => ({
+      ...(state as any),
+      _openTabErrorHandler: handler,
+    })) as any,
 
   closeTab: (key) =>
     set((state) => {

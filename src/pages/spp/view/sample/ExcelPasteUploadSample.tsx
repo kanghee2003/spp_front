@@ -10,14 +10,20 @@ type UploadRow = {
   itemName: string;
   qty: string;
   remark: string;
+  type: string;
+  roles: string;
 };
 
 function createRow(): UploadRow {
-  return { itemCode: '', itemName: '', qty: '', remark: '' };
+  return { itemCode: '', itemName: '', qty: '', remark: '', type: 'ORG', roles: '' };
 }
 
 export default function ExcelPasteUploadSample() {
-  const [rows, setRows] = useState<UploadRow[]>(() => [createRow()]);
+  const [rows, setRows] = useState<UploadRow[]>(() => [
+    { itemCode: '1', itemName: '2', qty: '3', remark: 'x', type: 'ORG', roles: 'CREATE' },
+    { itemCode: '1', itemName: '2', qty: '3', remark: 'x', type: 'ORG', roles: 'READ' },
+    { itemCode: '1', itemName: '2', qty: '3', remark: 'x', type: 'ORG', roles: 'CREATE' },
+  ]);
 
   const columns = useMemo<ExcelPasteUploadColumn<UploadRow>[]>(() => {
     return [
@@ -25,6 +31,30 @@ export default function ExcelPasteUploadSample() {
       { title: '품목명', dataIndex: 'itemName', width: 240, placeholder: 'B열' },
       { title: '수량', dataIndex: 'qty', width: 120, placeholder: 'C열' },
       { title: '비고', dataIndex: 'remark', width: 280, placeholder: 'D열' },
+      {
+        title: '구분',
+        dataIndex: 'type',
+        width: 160,
+        placeholder: '선택',
+        type: 'select',
+        options: [
+          { label: '사용자', value: 'USER' },
+          { label: '부서', value: 'ORG' },
+        ],
+      },
+      {
+        title: '권한',
+        dataIndex: 'roles',
+        width: 240,
+        placeholder: '권한 선택',
+        type: 'multiSelect',
+        options: [
+          { label: '1.수신업무(펀드,방카,신탁 등)', value: 'READ' },
+          { label: '등록', value: 'CREATE' },
+          { label: '수정', value: 'UPDATE' },
+          { label: '삭제', value: 'DELETE' },
+        ],
+      },
     ];
   }, []);
 

@@ -12,6 +12,8 @@ import { useMdiStore } from '@/store/mdi.store';
 import { MenuType, useMenuStore } from '@/store/menu.store';
 import { Footer } from 'antd/es/layout/layout';
 import { useAuthStore } from '@/store/auth.store';
+import { useMessage } from '@/hook/useMessage';
+import SystemNoticePopup from './SystemNoticePopup';
 
 const { Header, Sider, Content } = Layout;
 
@@ -67,6 +69,9 @@ const buildMenuItems = (tree: MenuNode[]): NonNullable<MenuProps['items']> => {
 };
 
 const AppLayout = () => {
+  const { alertMessage } = useMessage();
+  const setOpenTabErrorHandler = useMdiStore((s) => s.setOpenTabErrorHandler);
+
   const systemKey = useMenuStore((s) => s.systemKey);
   const menuTree = useMenuStore((s) => s.menuTree);
   const ensureDashboard = useMdiStore((s) => s.ensureDashboard);
@@ -164,6 +169,14 @@ const AppLayout = () => {
   useEffect(() => {
     setOpenKeys(defaultOpenKeys);
   }, [defaultOpenKeys]);
+
+  useEffect(() => {
+    setOpenTabErrorHandler(alertMessage);
+
+    return () => {
+      setOpenTabErrorHandler(undefined);
+    };
+  }, [alertMessage, setOpenTabErrorHandler]);
 
   const floatingTitle = useMemo(() => {
     if (!floatingRootKey) return '';
@@ -375,6 +388,7 @@ const AppLayout = () => {
 
       {/* 오른쪽 시스템 링크 토글 */}
       <SystemLinks />
+      <SystemNoticePopup />
     </Layout>
   );
 };

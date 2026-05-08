@@ -145,3 +145,16 @@ export const cookieUtil = {
     return null;
   },
 };
+
+const NOTICE_COOKIE_PREFIX = 'hide_notice_';
+
+export const isNoticeHiddenToday = (noticeId: string | number) => {
+  return cookieUtil.get(`${NOTICE_COOKIE_PREFIX}${noticeId}`) === 'Y';
+};
+
+export const hideNoticeToday = (noticeId: string | number) => {
+  cookieUtil.set(`${NOTICE_COOKIE_PREFIX}${noticeId}`, 'Y', {
+    expires: 1,
+    path: '/',
+  });
+};

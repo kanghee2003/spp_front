@@ -32,6 +32,8 @@ export const menuTreeSpp: MenuNode[] = [
       { key: 'FileUpload', path: 'sample/FileUploadSample', label: 'FileUpload', type: MenuType.VIEW },
       { key: 'ExcelPasteUpload', path: 'sample/ExcelPasteUploadSample', label: 'ExcelPasteUpload', type: MenuType.VIEW },
       { key: 'Menu', path: 'sample/MenuManagement', label: 'Menu', type: MenuType.VIEW },
+      { key: 'Dept', path: 'sample/DeptManagement', label: 'DeptManagement', type: MenuType.VIEW },
+      { key: 'ExpandedTree', path: 'sample/ExpandedTree', label: 'ExpandedTree', type: MenuType.VIEW },
       { key: 'DynamicTable', path: 'sample/DynamicTableSample', label: 'Dynamic Table', type: MenuType.VIEW },
       { key: 'Footer', path: 'sample/FooterSample', label: 'Footer Sample', type: MenuType.VIEW },
       { key: 'Widget', path: 'sample/WidgetSample', label: 'Widget Sample', type: MenuType.VIEW },
