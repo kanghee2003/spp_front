@@ -130,8 +130,13 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
 
     if (!target) return;
 
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+
+    const nextTop = container.scrollTop + targetRect.top - containerRect.top - 8;
+
     container.scrollTo({
-      top: target.offsetTop - 8,
+      top: nextTop,
       behavior: 'auto',
     });
   }, []);
@@ -352,14 +357,22 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
 
       if (!pages.length) return;
 
-      const containerTop = container.scrollTop;
-      let activePage = 1;
+      const containerRect = container.getBoundingClientRect();
+      const containerCenterY = containerRect.top + containerRect.height / 2;
 
-      for (const page of pages) {
-        if (page.offsetTop - 40 <= containerTop) {
+      let activePage = 1;
+      let minDistance = Number.MAX_SAFE_INTEGER;
+
+      pages.forEach((page) => {
+        const pageRect = page.getBoundingClientRect();
+        const pageCenterY = pageRect.top + pageRect.height / 2;
+        const distance = Math.abs(containerCenterY - pageCenterY);
+
+        if (distance < minDistance) {
+          minDistance = distance;
           activePage = Number(page.dataset.pageNo || 1);
         }
-      }
+      });
 
       currentPageRef.current = activePage;
       setCurrentPage(activePage);

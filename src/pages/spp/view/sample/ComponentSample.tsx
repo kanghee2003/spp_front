@@ -373,8 +373,8 @@ const ComponentSample = () => {
         onOk={() => setIsExcelOpen(false)}
         onCancel={() => setIsExcelOpen(false)}
       />
-      {openPdf && <PdfCanvasPreview title="PDF 미리보기" url="/cm/pdf/preview/test.pdf" onClose={() => setOpenPdf(false)} />}
-      {openPdf2 && <PdfIframePreview title="PDF 미리보기" url="/cm/pdf/preview/test.pdf" onClose={() => setOpenPdf2(false)} />}
+      {openPdf && <PdfCanvasPreview title="PDF 미리보기" url="/cm/pdf/preview/test1.pdf" onClose={() => setOpenPdf(false)} />}
+      {openPdf2 && <PdfIframePreview title="PDF 미리보기" url="/cm/pdf/preview/test1.pdf" onClose={() => setOpenPdf2(false)} />}
     </Card>
   );
 };
