@@ -25,6 +25,8 @@ import { isMatch } from '@/utils/regexp.util';
 import { REGEXP_RULES } from '@/type/common.regexp';
 import SppMultiSelectForm from '../../component/Select/SppMultiSelectForm';
 import SppMultiSelect from '../../component/Select/SppMultiSelect';
+import PdfCanvasPreview from '../../component/Viewer/PdfCanvasPreview';
+import PdfIframePreview from '../../component/Viewer/ PdfIframePreview';
 
 type ComponentSampleFomeType = {
   select: string;
@@ -45,7 +47,8 @@ const ComponentSample = () => {
   const [isExcelOpen, setIsExcelOpen] = useState(false);
   const [excelRows, setExcelRows] = useState<ExcelUploadList>([]);
   const autoCompleteRef = useRef<SppCustomAutoCompleteRef>(null);
-
+  const [openPdf, setOpenPdf] = useState<boolean>(false);
+  const [openPdf2, setOpenPdf2] = useState<boolean>(false);
   const handleExcelUploaded = (list: ExcelUploadList) => {
     setExcelRows(list);
     alertMessage(`엑셀 업로드 ${list.length}건 확인\n` + JSON.stringify(list.slice(0, 5), null, 2));
@@ -316,6 +319,16 @@ const ComponentSample = () => {
             >
               TabControlTab2로 이동
             </SppButton>
+            <Col span={4}>
+              <SppButton type="default" htmlType="button" onClick={() => setOpenPdf(true)}>
+                PDF보기
+              </SppButton>
+            </Col>
+            <Col span={4}>
+              <SppButton type="default" htmlType="button" onClick={() => setOpenPdf2(true)}>
+                PDF보기2
+              </SppButton>
+            </Col>
           </Col>
         </Row>
 
@@ -360,6 +373,8 @@ const ComponentSample = () => {
         onOk={() => setIsExcelOpen(false)}
         onCancel={() => setIsExcelOpen(false)}
       />
+      {openPdf && <PdfCanvasPreview title="PDF 미리보기" url="/cm/pdf/preview/test.pdf" onClose={() => setOpenPdf(false)} />}
+      {openPdf2 && <PdfIframePreview title="PDF 미리보기" url="/cm/pdf/preview/test.pdf" onClose={() => setOpenPdf2(false)} />}
     </Card>
   );
 };
