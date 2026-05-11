@@ -1,5 +1,7 @@
 import { Form, Input, Button } from 'antd';
 import { isValidIpv4 } from '@/utils/common.util';
+import { useMdiContext } from '@/hook/useMdiContext';
+import { useEffect } from 'react';
 
 export default function IpSubmitOnlyForm() {
   const [form] = Form.useForm();
@@ -13,6 +15,14 @@ export default function IpSubmitOnlyForm() {
       // validateFields가 에러를 던지면 antd가 Form.Item에 에러를 표시해줌
     }
   };
+  const { params } = useMdiContext();
+
+  const fromLink = params?.fromLink === true;
+  const queryParams = params?.queryParams;
+
+  useEffect(() => {
+    console.log(params);
+  }, [params.fromLink]);
 
   return (
     <Form form={form} layout="vertical" initialValues={{ ip: '' }}>

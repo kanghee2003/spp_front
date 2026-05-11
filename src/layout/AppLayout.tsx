@@ -20,6 +20,7 @@ const { Header, Sider, Content } = Layout;
 const SIDEBAR_WIDTH = 240;
 const SIDEBAR_COLLAPSED_WIDTH = 56;
 const ICON_AREA_WIDTH = SIDEBAR_COLLAPSED_WIDTH;
+const LINK_ENTRY_SEARCH_KEY = 'LINK_ENTRY_SEARCH';
 
 // ===== 정렬용 상수 (여기만 미세조정하면 됨) =====
 const SIDER_TOP_PADDING = 8; // 메뉴 시작 상단 여백
@@ -90,6 +91,15 @@ const AppLayout = () => {
   // 좌측 1뎁스는 기본적으로 펼침(아이콘 + 메뉴명)
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
+  const [isLinkEntry, setIsLinkEntry] = useState(() => {
+    const search = window.location.search || sessionStorage.getItem(LINK_ENTRY_SEARCH_KEY) || '';
+    const params = new URLSearchParams(search);
+
+    return !!params.get('menuId');
+  });
+
+  const [noticeReady, setNoticeReady] = useState(false);
+
   // 메뉴 트리가 바뀌면 기본 루트도 첫 번째 1뎁스로 맞춤
   useEffect(() => {
     if (!floatingRootKey && topMenus.length > 0) {
@@ -108,6 +118,7 @@ const AppLayout = () => {
   const closeFloating = () => setFloatingOpen(false);
 
   const siderRef = useRef<HTMLDivElement | null>(null);
+  const queryOpenHandledRef = useRef<string | null>(null);
 
   // 바깥 클릭 시 플로팅 닫기
   useEffect(() => {
@@ -128,8 +139,10 @@ const AppLayout = () => {
   useEffect(() => {
     try {
       const nextPath = `/${systemKey}`;
+      const search = window.location.search;
+
       if (window.location.pathname !== nextPath) {
-        window.history.replaceState(null, '', nextPath);
+        window.history.replaceState(null, '', `${nextPath}${search}`);
       }
     } catch {
       // ignore
@@ -140,6 +153,80 @@ const AppLayout = () => {
   useEffect(() => {
     ensureDashboard();
   }, [ensureDashboard]);
+
+  // 쿼리스트링으로 진입한 화면 자동 오픈
+  useEffect(() => {
+    if (!menuTree || menuTree.length === 0) {
+      return;
+    }
+
+    const search = window.location.search || sessionStorage.getItem(LINK_ENTRY_SEARCH_KEY) || '';
+    const params = new URLSearchParams(search);
+    const menuId = params.get('menuId');
+
+    if (!menuId) {
+      setNoticeReady(true);
+      return;
+    }
+
+    setIsLinkEntry(true);
+
+    if (queryOpenHandledRef.current === menuId) {
+      setNoticeReady(true);
+      return;
+    }
+
+    const findMenuNode = (nodes: MenuNode[]): MenuNode | null => {
+      for (const node of nodes) {
+        if (node.key === menuId) {
+          return node;
+        }
+
+        if (node.children && node.children.length > 0) {
+          const found = findMenuNode(node.children);
+          if (found) {
+            return found;
+          }
+        }
+      }
+
+      return null;
+    };
+
+    const menuNode = findMenuNode(menuTree);
+
+    if (!menuNode) {
+      alertMessage('접근 권한이 없거나 사용할 수 없는 메뉴입니다.');
+      queryOpenHandledRef.current = menuId;
+      sessionStorage.removeItem(LINK_ENTRY_SEARCH_KEY);
+      setNoticeReady(true);
+      return;
+    }
+
+    if (menuNode.type !== MenuType.VIEW && menuNode.type !== MenuType.TAB) {
+      alertMessage('이동할 수 없는 메뉴입니다.');
+      queryOpenHandledRef.current = menuId;
+      sessionStorage.removeItem(LINK_ENTRY_SEARCH_KEY);
+      setNoticeReady(true);
+      return;
+    }
+
+    openTab({
+      key: menuId,
+      params: {
+        fromLink: true,
+        queryParams: Object.fromEntries(params.entries()),
+      },
+    });
+
+    queryOpenHandledRef.current = menuId;
+    sessionStorage.removeItem(LINK_ENTRY_SEARCH_KEY);
+    setNoticeReady(true);
+
+    if (window.location.search) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [menuTree, openTab, alertMessage]);
 
   const items = useMemo<NonNullable<MenuProps['items']>>(() => {
     return buildMenuItems(menuTree);
@@ -388,7 +475,7 @@ const AppLayout = () => {
 
       {/* 오른쪽 시스템 링크 토글 */}
       <SystemLinks />
-      <SystemNoticePopup />
+      {noticeReady && !isLinkEntry && <SystemNoticePopup />}
     </Layout>
   );
 };
