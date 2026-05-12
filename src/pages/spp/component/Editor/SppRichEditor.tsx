@@ -48,6 +48,28 @@ const cleanWordHtml = (html: string) => {
   );
 };
 
+/**
+ * XML 변환 시 문제가 되는 제어문자 제거
+ * - tab(\x09), LF(\x0A), CR(\x0D)은 유지
+ */
+const removeInvalidXmlChars = (html: string) => {
+  if (!html) return html;
+
+  let result = '';
+
+  for (let i = 0; i < html.length; i += 1) {
+    const code = html.charCodeAt(i);
+
+    const isInvalidXmlChar = (code >= 0x00 && code <= 0x08) || code === 0x0b || code === 0x0c || (code >= 0x0e && code <= 0x1f);
+
+    if (!isInvalidXmlChar) {
+      result += html[i];
+    }
+  }
+
+  return result;
+};
+
 const getUploadURI = (systemKey: string) => {
   return import.meta.env.VITE_EDITOR_IMAGE_UPLOAD_URI;
 };
@@ -229,6 +251,7 @@ const SppRichEditor = ({
       onChange={(html) => {
         let cleaned = stripDataImages(html);
         cleaned = cleanWordHtml(cleaned);
+        cleaned = removeInvalidXmlChars(cleaned);
 
         onChangeHtml?.(cleaned);
       }}

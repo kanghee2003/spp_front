@@ -13,16 +13,22 @@ type PdfCanvasPreviewProps = {
   onClose: () => void;
 };
 
+type PageSize = {
+  width: number;
+  height: number;
+};
+
 const DEFAULT_SCALE = 1;
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 3;
 const SCALE_STEP = 0.1;
 
-// 실제 canvas는 크게 렌더링하고, 확대/축소는 wrapper width만 변경
-const RENDER_SCALE = 2;
+// 실제 canvas 렌더링 배율
+// 값이 클수록 선명하지만 렌더링 비용이 증가한다.
+const RENDER_SCALE = 1.5;
 
 // 썸네일 렌더링 배율
-const THUMBNAIL_SCALE = 0.25;
+const THUMBNAIL_SCALE = 0.18;
 
 const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -32,6 +38,15 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
   const blobUrlRef = useRef<string>('');
   const scaleRef = useRef(DEFAULT_SCALE);
   const currentPageRef = useRef(1);
+
+  const pageObserverRef = useRef<IntersectionObserver | null>(null);
+  const thumbnailObserverRef = useRef<IntersectionObserver | null>(null);
+
+  const pageSizeMapRef = useRef<Map<number, PageSize>>(new Map());
+  const renderedPageSetRef = useRef<Set<number>>(new Set());
+  const renderingPageSetRef = useRef<Set<number>>(new Set());
+  const renderedThumbnailSetRef = useRef<Set<number>>(new Set());
+  const renderingThumbnailSetRef = useRef<Set<number>>(new Set());
 
   const [loading, setLoading] = useState(false);
   const [scale, setScale] = useState(DEFAULT_SCALE);
@@ -46,11 +61,13 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
     const pages = Array.from(container.querySelectorAll<HTMLDivElement>('[data-page-no]'));
 
     pages.forEach((page) => {
-      const baseWidth = Number(page.dataset.baseWidth || 0);
+      const pageNo = Number(page.dataset.pageNo || 0);
+      const pageSize = pageSizeMapRef.current.get(pageNo);
 
-      if (baseWidth > 0) {
-        page.style.width = `${baseWidth * targetScale}px`;
-      }
+      if (!pageSize) return;
+
+      page.style.width = `${pageSize.width * targetScale}px`;
+      page.style.height = `${pageSize.height * targetScale}px`;
     });
   }, []);
 
@@ -77,81 +94,203 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
       item.style.background = isActive ? '#e6f4ff' : 'transparent';
       item.style.border = isActive ? '1px solid #1677ff' : '1px solid transparent';
     });
+
+    const activeItem = thumbnailContainer.querySelector<HTMLDivElement>(`[data-thumbnail-page-no="${pageNo}"]`);
+
+    if (!activeItem) return;
+
+    const containerRect = thumbnailContainer.getBoundingClientRect();
+    const activeRect = activeItem.getBoundingClientRect();
+
+    const isAbove = activeRect.top < containerRect.top;
+    const isBelow = activeRect.bottom > containerRect.bottom;
+
+    if (isAbove || isBelow) {
+      thumbnailContainer.scrollTo({
+        top: thumbnailContainer.scrollTop + activeRect.top - containerRect.top - thumbnailContainer.clientHeight / 2 + activeRect.height / 2,
+        behavior: 'auto',
+      });
+    }
   }, []);
 
-  const renderPdf = useCallback(async () => {
+  const renderPage = useCallback(async (pageNo: number) => {
+    const container = containerRef.current;
+    const pdf = pdfRef.current;
+
+    if (!container || !pdf) return;
+    if (renderedPageSetRef.current.has(pageNo)) return;
+    if (renderingPageSetRef.current.has(pageNo)) return;
+
+    const pageWrapper = container.querySelector<HTMLDivElement>(`[data-page-no="${pageNo}"]`);
+
+    const canvasArea = pageWrapper?.querySelector<HTMLDivElement>('[data-page-canvas-area]');
+
+    if (!pageWrapper || !canvasArea) return;
+
+    renderingPageSetRef.current.add(pageNo);
+
+    try {
+      const page = await pdf.getPage(pageNo);
+      const viewport = page.getViewport({ scale: RENDER_SCALE });
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      if (!context) return;
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.display = 'block';
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
+      canvas.style.background = '#fff';
+
+      canvasArea.innerHTML = '';
+      canvasArea.appendChild(canvas);
+
+      await page.render({
+        canvasContext: context,
+        viewport,
+      }).promise;
+
+      renderedPageSetRef.current.add(pageNo);
+    } finally {
+      renderingPageSetRef.current.delete(pageNo);
+    }
+  }, []);
+
+  const renderThumbnail = useCallback(async (pageNo: number) => {
+    const thumbnailContainer = thumbnailRef.current;
+    const pdf = pdfRef.current;
+
+    if (!thumbnailContainer || !pdf) return;
+    if (renderedThumbnailSetRef.current.has(pageNo)) return;
+    if (renderingThumbnailSetRef.current.has(pageNo)) return;
+
+    const thumbnailItem = thumbnailContainer.querySelector<HTMLDivElement>(`[data-thumbnail-page-no="${pageNo}"]`);
+
+    const canvasArea = thumbnailItem?.querySelector<HTMLDivElement>('[data-thumbnail-canvas-area]');
+
+    if (!thumbnailItem || !canvasArea) return;
+
+    renderingThumbnailSetRef.current.add(pageNo);
+
+    try {
+      const page = await pdf.getPage(pageNo);
+      const viewport = page.getViewport({ scale: THUMBNAIL_SCALE });
+
+      const canvas = document.createElement('canvas');
+      const context = canvas.getContext('2d');
+
+      if (!context) return;
+
+      canvas.width = viewport.width;
+      canvas.height = viewport.height;
+      canvas.style.display = 'block';
+      canvas.style.width = '100%';
+      canvas.style.height = 'auto';
+      canvas.style.background = '#fff';
+      canvas.style.boxShadow = '0 1px 4px rgba(0, 0, 0, 0.15)';
+
+      canvasArea.innerHTML = '';
+      canvasArea.appendChild(canvas);
+
+      await page.render({
+        canvasContext: context,
+        viewport,
+      }).promise;
+
+      renderedThumbnailSetRef.current.add(pageNo);
+    } finally {
+      renderingThumbnailSetRef.current.delete(pageNo);
+    }
+  }, []);
+
+  const scrollToPage = useCallback(
+    (pageNo: number) => {
+      const container = containerRef.current;
+      if (!container) return;
+
+      const target = container.querySelector<HTMLDivElement>(`[data-page-no="${pageNo}"]`);
+
+      if (!target) return;
+
+      const containerRect = container.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
+
+      const nextTop = container.scrollTop + targetRect.top - containerRect.top - 8;
+
+      container.scrollTo({
+        top: nextTop,
+        behavior: 'auto',
+      });
+
+      renderPage(pageNo);
+    },
+    [renderPage],
+  );
+
+  const createPagePlaceholders = useCallback(async () => {
     const container = containerRef.current;
     const pdf = pdfRef.current;
 
     if (!container || !pdf) return;
 
     container.innerHTML = '';
+    pageSizeMapRef.current.clear();
+    renderedPageSetRef.current.clear();
+    renderingPageSetRef.current.clear();
 
     for (let pageNo = 1; pageNo <= pdf.numPages; pageNo += 1) {
       const page = await pdf.getPage(pageNo);
+      const viewport = page.getViewport({ scale: 1 });
 
-      const baseViewport = page.getViewport({ scale: 1 });
-      const renderViewport = page.getViewport({ scale: RENDER_SCALE });
+      pageSizeMapRef.current.set(pageNo, {
+        width: viewport.width,
+        height: viewport.height,
+      });
 
       const pageWrapper = document.createElement('div');
       pageWrapper.dataset.pageNo = String(pageNo);
-      pageWrapper.dataset.baseWidth = String(baseViewport.width);
       pageWrapper.style.margin = '0 auto 16px';
-      pageWrapper.style.width = `${baseViewport.width * scaleRef.current}px`;
+      pageWrapper.style.width = `${viewport.width * scaleRef.current}px`;
+      pageWrapper.style.height = `${viewport.height * scaleRef.current}px`;
+      pageWrapper.style.background = '#fff';
+      pageWrapper.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.12)';
+      pageWrapper.style.position = 'relative';
 
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
+      const canvasArea = document.createElement('div');
+      canvasArea.dataset.pageCanvasArea = 'true';
+      canvasArea.style.width = '100%';
+      canvasArea.style.height = '100%';
 
-      if (!context) continue;
+      const loadingText = document.createElement('div');
+      loadingText.innerText = 'Loading...';
+      loadingText.style.position = 'absolute';
+      loadingText.style.left = '50%';
+      loadingText.style.top = '50%';
+      loadingText.style.transform = 'translate(-50%, -50%)';
+      loadingText.style.fontSize = '12px';
+      loadingText.style.color = '#999';
 
-      canvas.width = renderViewport.width;
-      canvas.height = renderViewport.height;
-      canvas.style.display = 'block';
-      canvas.style.width = '100%';
-      canvas.style.height = 'auto';
-      canvas.style.background = '#fff';
-      canvas.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.12)';
-
-      pageWrapper.appendChild(canvas);
+      canvasArea.appendChild(loadingText);
+      pageWrapper.appendChild(canvasArea);
       container.appendChild(pageWrapper);
-
-      await page.render({
-        canvasContext: context,
-        viewport: renderViewport,
-      }).promise;
     }
   }, []);
 
-  const scrollToPage = useCallback((pageNo: number) => {
-    const container = containerRef.current;
-    if (!container) return;
-
-    const target = container.querySelector<HTMLDivElement>(`[data-page-no="${pageNo}"]`);
-
-    if (!target) return;
-
-    const containerRect = container.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-
-    const nextTop = container.scrollTop + targetRect.top - containerRect.top - 8;
-
-    container.scrollTo({
-      top: nextTop,
-      behavior: 'auto',
-    });
-  }, []);
-
-  const renderThumbnails = useCallback(async () => {
+  const createThumbnailPlaceholders = useCallback(() => {
     const thumbnailContainer = thumbnailRef.current;
     const pdf = pdfRef.current;
 
     if (!thumbnailContainer || !pdf) return;
 
     thumbnailContainer.innerHTML = '';
+    renderedThumbnailSetRef.current.clear();
+    renderingThumbnailSetRef.current.clear();
 
     for (let pageNo = 1; pageNo <= pdf.numPages; pageNo += 1) {
-      const page = await pdf.getPage(pageNo);
-      const viewport = page.getViewport({ scale: THUMBNAIL_SCALE });
+      const pageSize = pageSizeMapRef.current.get(pageNo);
 
       const thumbnailItem = document.createElement('div');
       thumbnailItem.dataset.thumbnailPageNo = String(pageNo);
@@ -162,18 +301,17 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
       thumbnailItem.style.borderRadius = '4px';
       thumbnailItem.style.background = 'transparent';
 
-      const canvas = document.createElement('canvas');
-      const context = canvas.getContext('2d');
+      const canvasArea = document.createElement('div');
+      canvasArea.dataset.thumbnailCanvasArea = 'true';
+      canvasArea.style.width = '100%';
+      canvasArea.style.background = '#fff';
+      canvasArea.style.boxShadow = '0 1px 4px rgba(0, 0, 0, 0.15)';
 
-      if (!context) continue;
-
-      canvas.width = viewport.width;
-      canvas.height = viewport.height;
-      canvas.style.display = 'block';
-      canvas.style.width = '100%';
-      canvas.style.height = 'auto';
-      canvas.style.background = '#fff';
-      canvas.style.boxShadow = '0 1px 4px rgba(0, 0, 0, 0.15)';
+      if (pageSize) {
+        canvasArea.style.aspectRatio = `${pageSize.width} / ${pageSize.height}`;
+      } else {
+        canvasArea.style.height = '120px';
+      }
 
       const pageLabel = document.createElement('div');
       pageLabel.innerText = String(pageNo);
@@ -182,7 +320,7 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
       pageLabel.style.color = '#666';
       pageLabel.style.textAlign = 'center';
 
-      thumbnailItem.appendChild(canvas);
+      thumbnailItem.appendChild(canvasArea);
       thumbnailItem.appendChild(pageLabel);
       thumbnailContainer.appendChild(thumbnailItem);
 
@@ -192,24 +330,94 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
         setPageInputValue(pageNo);
         applyActiveThumbnail(pageNo);
         scrollToPage(pageNo);
+        renderThumbnail(pageNo);
       };
-
-      await page.render({
-        canvasContext: context,
-        viewport,
-      }).promise;
     }
 
     applyActiveThumbnail(1);
-  }, [applyActiveThumbnail, scrollToPage]);
+  }, [applyActiveThumbnail, scrollToPage, renderThumbnail]);
+
+  const setupPageObserver = useCallback(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    if (pageObserverRef.current) {
+      pageObserverRef.current.disconnect();
+    }
+
+    pageObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          const target = entry.target as HTMLDivElement;
+          const pageNo = Number(target.dataset.pageNo || 0);
+
+          if (pageNo > 0) {
+            renderPage(pageNo);
+          }
+        });
+      },
+      {
+        root: container,
+        rootMargin: '600px 0px',
+        threshold: 0.01,
+      },
+    );
+
+    const pages = Array.from(container.querySelectorAll<HTMLDivElement>('[data-page-no]'));
+
+    pages.forEach((page) => {
+      pageObserverRef.current?.observe(page);
+    });
+  }, [renderPage]);
+
+  const setupThumbnailObserver = useCallback(() => {
+    const thumbnailContainer = thumbnailRef.current;
+    if (!thumbnailContainer) return;
+
+    if (thumbnailObserverRef.current) {
+      thumbnailObserverRef.current.disconnect();
+    }
+
+    thumbnailObserverRef.current = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+
+          const target = entry.target as HTMLDivElement;
+          const pageNo = Number(target.dataset.thumbnailPageNo || 0);
+
+          if (pageNo > 0) {
+            renderThumbnail(pageNo);
+          }
+        });
+      },
+      {
+        root: thumbnailContainer,
+        rootMargin: '300px 0px',
+        threshold: 0.01,
+      },
+    );
+
+    const thumbnails = Array.from(thumbnailContainer.querySelectorAll<HTMLDivElement>('[data-thumbnail-page-no]'));
+
+    thumbnails.forEach((thumbnail) => {
+      thumbnailObserverRef.current?.observe(thumbnail);
+    });
+  }, [renderThumbnail]);
 
   const moveToPage = (value: number | null) => {
     if (!value || !pageCount) return;
 
     const nextPage = Math.min(Math.max(value, 1), pageCount);
 
+    currentPageRef.current = nextPage;
+    setCurrentPage(nextPage);
     setPageInputValue(nextPage);
+    applyActiveThumbnail(nextPage);
     scrollToPage(nextPage);
+    renderThumbnail(nextPage);
   };
 
   const handleZoomOut = () => {
@@ -228,14 +436,11 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
     const container = containerRef.current;
     if (!container) return;
 
-    const firstPage = container.querySelector<HTMLDivElement>('[data-page-no="1"]');
-    if (!firstPage) return;
-
-    const baseWidth = Number(firstPage.dataset.baseWidth || 0);
-    if (!baseWidth) return;
+    const pageSize = pageSizeMapRef.current.get(1);
+    if (!pageSize) return;
 
     const containerWidth = container.clientWidth - 32;
-    const nextScale = containerWidth / baseWidth;
+    const nextScale = containerWidth / pageSize.width;
 
     setZoom(nextScale);
   };
@@ -266,12 +471,24 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
     document.body.appendChild(iframe);
 
     iframe.onload = () => {
-      iframe.contentWindow?.focus();
-      iframe.contentWindow?.print();
+      const iframeWindow = iframe.contentWindow;
+
+      if (!iframeWindow) return;
+
+      const removeIframe = () => {
+        iframeWindow.removeEventListener('afterprint', removeIframe);
+
+        if (document.body.contains(iframe)) {
+          document.body.removeChild(iframe);
+        }
+      };
+
+      iframeWindow.addEventListener('afterprint', removeIframe);
 
       setTimeout(() => {
-        document.body.removeChild(iframe);
-      }, 1000);
+        iframeWindow.focus();
+        iframeWindow.print();
+      }, 300);
     };
   };
 
@@ -293,6 +510,14 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
       container.innerHTML = '';
       thumbnailContainer.innerHTML = '';
 
+      if (pageObserverRef.current) {
+        pageObserverRef.current.disconnect();
+      }
+
+      if (thumbnailObserverRef.current) {
+        thumbnailObserverRef.current.disconnect();
+      }
+
       setLoading(true);
       setCurrentPage(1);
       setPageInputValue(1);
@@ -300,6 +525,12 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
       setPageCount(0);
       setScale(DEFAULT_SCALE);
       scaleRef.current = DEFAULT_SCALE;
+
+      pageSizeMapRef.current.clear();
+      renderedPageSetRef.current.clear();
+      renderingPageSetRef.current.clear();
+      renderedThumbnailSetRef.current.clear();
+      renderingThumbnailSetRef.current.clear();
 
       try {
         if (blobUrlRef.current) {
@@ -329,11 +560,19 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
         pdfRef.current = pdf;
         setPageCount(pdf.numPages);
 
-        await renderPdf();
+        await createPagePlaceholders();
 
         if (cancelled) return;
 
-        await renderThumbnails();
+        createThumbnailPlaceholders();
+
+        if (cancelled) return;
+
+        setupPageObserver();
+        setupThumbnailObserver();
+
+        renderPage(1);
+        renderThumbnail(1);
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -346,7 +585,7 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
     return () => {
       cancelled = true;
     };
-  }, [url, renderPdf, renderThumbnails]);
+  }, [url, createPagePlaceholders, createThumbnailPlaceholders, setupPageObserver, setupThumbnailObserver, renderPage, renderThumbnail]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -378,6 +617,7 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
       setCurrentPage(activePage);
       setPageInputValue(activePage);
       applyActiveThumbnail(activePage);
+      renderThumbnail(activePage);
     };
 
     container.addEventListener('scroll', handleScroll);
@@ -385,7 +625,7 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
     return () => {
       container.removeEventListener('scroll', handleScroll);
     };
-  }, [applyActiveThumbnail]);
+  }, [applyActiveThumbnail, renderThumbnail]);
 
   useEffect(() => {
     const container = containerRef.current;
@@ -410,6 +650,14 @@ const PdfCanvasPreview = ({ title, url, onClose }: PdfCanvasPreviewProps) => {
 
   useEffect(() => {
     return () => {
+      if (pageObserverRef.current) {
+        pageObserverRef.current.disconnect();
+      }
+
+      if (thumbnailObserverRef.current) {
+        thumbnailObserverRef.current.disconnect();
+      }
+
       if (blobUrlRef.current) {
         URL.revokeObjectURL(blobUrlRef.current);
       }
