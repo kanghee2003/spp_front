@@ -78,7 +78,6 @@ export type SppRichEditorProps = {
   /** 초기값만 사용 (typing 중에는 외부에서 value로 다시 주입하지 않음) */
   defaultHtml?: string;
   onChangeHtml?: (html: string) => void;
-  onBlurHtml?: (html: string) => void;
 
   uploadUrl?: string;
   withCredentials?: boolean;
@@ -91,7 +90,6 @@ export type SppRichEditorProps = {
 const SppRichEditor = ({
   defaultHtml = '',
   onChangeHtml,
-  onBlurHtml,
   uploadUrl = getUploadURI(useMenuStore().systemKey),
   withCredentials = true,
   headers,
@@ -215,16 +213,6 @@ const SppRichEditor = ({
       },
 
       events: {
-        blur: () => {
-          const html = editorRef.current?.value ?? '';
-
-          let cleaned = stripDataImages(html);
-          cleaned = cleanWordHtml(cleaned);
-          cleaned = removeInvalidXmlChars(cleaned);
-
-          onBlurHtml?.(cleaned);
-        },
-
         // 붙여넣기 이미지(file)면: (기본 data:image 삽입을 막고) 업로드 후 URL 삽입
         paste: async (event: ClipboardEvent) => {
           try {
@@ -250,7 +238,7 @@ const SppRichEditor = ({
         },
       },
     };
-  }, [readOnly, height, placeholder, uploadUrl, withCredentials, reqHeaders, csrfHeaders, API_BASE, onBlurHtml]);
+  }, [readOnly, height, placeholder, uploadUrl, withCredentials, reqHeaders, csrfHeaders, API_BASE]);
 
   return (
     <JoditEditor

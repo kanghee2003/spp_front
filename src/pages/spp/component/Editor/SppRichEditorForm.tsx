@@ -1,40 +1,21 @@
 // src/pages/spp/component/Editor/JoditRichEditorForm.tsx
-import React, { useRef } from 'react';
+import React from 'react';
 import { Control, Controller } from 'react-hook-form';
 import SppRichEditor, { SppRichEditorProps } from './SppRichEditor';
 
-export interface RichEditorFormProps extends Omit<SppRichEditorProps, 'defaultHtml' | 'onBlurHtml'> {
+export interface RichEditorFormProps extends Omit<SppRichEditorProps, 'defaultHtml' | 'onChangeHtml'> {
   name: string;
   control: Control<any>;
   defaultValue?: string;
 }
 
-const SppRichEditorForm = ({ name, control, defaultValue = '', onChangeHtml, ...props }: RichEditorFormProps) => {
-  const latestHtmlRef = useRef(defaultValue);
-
+const SppRichEditorForm = ({ name, control, defaultValue = '', ...props }: RichEditorFormProps) => {
   return (
     <Controller
       name={name}
       control={control}
       defaultValue={defaultValue}
-      render={({ field }) => (
-        <SppRichEditor
-          {...props}
-          defaultHtml={field.value ?? ''}
-          onChangeHtml={(html: string) => {
-            latestHtmlRef.current = html;
-
-            onChangeHtml?.(html);
-          }}
-          onBlurHtml={(html: string) => {
-            const latestHtml = html || latestHtmlRef.current || '';
-
-            latestHtmlRef.current = latestHtml;
-            field.onChange(latestHtml);
-            field.onBlur();
-          }}
-        />
-      )}
+      render={({ field }) => <SppRichEditor {...props} defaultHtml={field.value ?? ''} onChangeHtml={(html: string) => field.onChange(html)} />}
     />
   );
 };
