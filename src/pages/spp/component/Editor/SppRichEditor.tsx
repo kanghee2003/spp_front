@@ -271,37 +271,6 @@ const SppRichEditor = ({
         afterInit: (jodit: Jodit) => {
           editorRef.current = jodit;
         },
-
-        // 붙여넣기 이미지(file)면: (기본 data:image 삽입을 막고) 업로드 후 URL 삽입
-        paste: async (event: ClipboardEvent) => {
-          try {
-            const items = event.clipboardData?.items;
-            if (!items || !items.length) return;
-
-            const imgItem = Array.from(items).find((it) => it.kind === 'file' && it.type.startsWith('image/'));
-            if (!imgItem) return;
-
-            const file = imgItem.getAsFile();
-            if (!file) return;
-
-            // image/svg+xml 같은 비허용 이미지도 Jodit 기본 삽입을 막기 위해 여기서 먼저 preventDefault
-            event.preventDefault();
-
-            const fileType = file.type || imgItem.type;
-
-            if (!isAllowedImageType(fileType) || !isAllowedImageExtension(file.name)) {
-              alert('jpg, jpeg, png, gif, webp 파일만 업로드할 수 있습니다.');
-              return;
-            }
-
-            const resolvedUrl = await uploadImageFile(file, imgItem.type);
-            if (!resolvedUrl) return;
-
-            insertImageToEditor(resolvedUrl);
-          } catch (e) {
-            console.error('Jodit paste image upload failed:', e);
-          }
-        },
       },
     };
   }, [readOnly, height, placeholder, uploadUrl, withCredentials, reqHeaders, csrfHeaders, API_BASE]);
@@ -313,7 +282,6 @@ const SppRichEditor = ({
       config={config}
       onChange={(html) => {
         let cleaned = stripDataImages(html);
-        cleaned = cleanWordHtml(cleaned);
         cleaned = removeInvalidXmlChars(cleaned);
 
         onChangeHtml?.(cleaned);
