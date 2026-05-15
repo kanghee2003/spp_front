@@ -9,6 +9,22 @@ const devUserId = import.meta.env.VITE_DEV_USER_ID;
 // headers 기본값을 렌더마다 새 객체로 만들면(config deps가 바뀌어서) 에디터가 자주 재초기화될 수 있음
 const EMPTY_HEADERS: Record<string, string> = {};
 
+const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+const ALLOWED_IMAGE_EXTENSIONS = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+const isAllowedImageType = (type?: string) => {
+  return ALLOWED_IMAGE_TYPES.includes((type ?? '').toLowerCase());
+};
+
+const getFileExtension = (fileName?: string) => {
+  if (!fileName || !fileName.includes('.')) return '';
+  return fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase();
+};
+
+const isAllowedImageExtension = (fileName?: string) => {
+  return ALLOWED_IMAGE_EXTENSIONS.includes(getFileExtension(fileName));
+};
+
 const getCookie = (name: string) => {
   const found = document.cookie.split('; ').find((c) => c.startsWith(`${name}=`));
   return found ? found.split('=')[1] : undefined;
@@ -113,10 +129,29 @@ const SppRichEditor = ({
     };
   }, [xsrf]);
 
+  const insertImageToEditor = (src: string) => {
+    const jodit = editorRef.current as any;
+
+    if (jodit?.s?.insertImage) {
+      jodit.s.insertImage(src);
+      return;
+    }
+
+    if (jodit?.selection?.insertImage) {
+      jodit.selection.insertImage(src);
+    }
+  };
+
   /**
    * 붙여넣기 이미지 업로드 (클립보드 파일 → 서버 업로드 → URL 반환)
    */
-  const uploadImageFile = async (file: File) => {
+  const uploadImageFile = async (file: File, fallbackType?: string) => {
+    const fileType = file.type || fallbackType;
+
+    if (!isAllowedImageType(fileType) || !isAllowedImageExtension(file.name)) {
+      throw new Error('이미지 파일만 업로드할 수 있습니다.');
+    }
+
     const form = new FormData();
     form.append('file', file);
 
@@ -181,6 +216,9 @@ const SppRichEditor = ({
         method: 'POST',
         withCredentials,
 
+        // 허용 이미지 확장자
+        imagesExtensions: ALLOWED_IMAGE_EXTENSIONS,
+
         // base64 이미지 삽입 금지 (data:image 용량 증가 방지)
         insertImageAsBase64URI: false,
 
@@ -189,6 +227,22 @@ const SppRichEditor = ({
           ...csrfHeaders,
         },
         filesVariableName: () => 'file',
+
+        buildData: (formData: FormData) => {
+          const files = formData.getAll('file') as File[];
+
+          const hasInvalidFile = files.some((file) => {
+            return !isAllowedImageType(file.type) || !isAllowedImageExtension(file.name);
+          });
+
+          if (hasInvalidFile) {
+            alert('jpg, jpeg, png, gif, webp 파일만 업로드할 수 있습니다.');
+            throw new Error('Invalid image file');
+          }
+
+          return formData;
+        },
+
         isSuccess: (resp: any) => resp?.code === 200 && !!resp?.item?.url,
         process: (resp: any) => {
           const url = resp?.item?.url as string | undefined; // 예: /uploads/editor/xxx.png
@@ -199,7 +253,7 @@ const SppRichEditor = ({
             files: resolvedUrl ? [resolvedUrl] : [],
             path: '',
             baseurl: '',
-            error: resp?.message ?? '',
+            error: resolvedUrl ? 0 : 1,
             msg: resp?.message ?? '',
           };
         },
@@ -207,12 +261,17 @@ const SppRichEditor = ({
           const files: string[] = data?.files ?? [];
           if (!files.length) return;
 
-          const j = (this as any)?.jodit;
-          files.forEach((src) => j?.s?.insertImage?.(src));
+          files.forEach((src) => {
+            insertImageToEditor(src);
+          });
         },
       },
 
       events: {
+        afterInit: (jodit: Jodit) => {
+          editorRef.current = jodit;
+        },
+
         // 붙여넣기 이미지(file)면: (기본 data:image 삽입을 막고) 업로드 후 URL 삽입
         paste: async (event: ClipboardEvent) => {
           try {
@@ -225,15 +284,22 @@ const SppRichEditor = ({
             const file = imgItem.getAsFile();
             if (!file) return;
 
-            // data:image로 들어가는 기본 paste 막기
+            // image/svg+xml 같은 비허용 이미지도 Jodit 기본 삽입을 막기 위해 여기서 먼저 preventDefault
             event.preventDefault();
 
-            const resolvedUrl = await uploadImageFile(file);
+            const fileType = file.type || imgItem.type;
+
+            if (!isAllowedImageType(fileType) || !isAllowedImageExtension(file.name)) {
+              alert('jpg, jpeg, png, gif, webp 파일만 업로드할 수 있습니다.');
+              return;
+            }
+
+            const resolvedUrl = await uploadImageFile(file, imgItem.type);
             if (!resolvedUrl) return;
 
-            editorRef.current?.s?.insertImage?.(resolvedUrl);
-          } catch {
-            // ignore
+            insertImageToEditor(resolvedUrl);
+          } catch (e) {
+            console.error('Jodit paste image upload failed:', e);
           }
         },
       },
@@ -242,9 +308,6 @@ const SppRichEditor = ({
 
   return (
     <JoditEditor
-      ref={(instance: any) => {
-        editorRef.current = instance?.editor ?? null;
-      }}
       // 재주입을 막기 위해 initial만 넣음
       value={initialHtml}
       config={config}
