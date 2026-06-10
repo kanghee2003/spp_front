@@ -14,6 +14,7 @@ import { Footer } from 'antd/es/layout/layout';
 import { useAuthStore } from '@/store/auth.store';
 import { useMessage } from '@/hook/useMessage';
 import SystemNoticePopup from './SystemNoticePopup';
+import { useQueryClient } from '@tanstack/react-query';
 
 const { Header, Sider, Content } = Layout;
 
@@ -71,11 +72,13 @@ const buildMenuItems = (tree: MenuNode[]): NonNullable<MenuProps['items']> => {
 
 const AppLayout = () => {
   const { alertMessage } = useMessage();
+  const queryClient = useQueryClient();
   const setOpenTabErrorHandler = useMdiStore((s) => s.setOpenTabErrorHandler);
 
   const systemKey = useMenuStore((s) => s.systemKey);
   const menuTree = useMenuStore((s) => s.menuTree);
   const ensureDashboard = useMdiStore((s) => s.ensureDashboard);
+  const resetTabs = useMdiStore((s) => s.resetTabs);
   const openTab = useMdiStore((s) => s.openTab);
   const setActive = useMdiStore((s) => s.setActive);
   const clearToken = useAuthStore((s) => s.clearToken);
@@ -99,6 +102,12 @@ const AppLayout = () => {
   });
 
   const [noticeReady, setNoticeReady] = useState(false);
+
+  const handleLogout = () => {
+    resetTabs();
+    clearToken();
+    queryClient.clear();
+  };
 
   // 메뉴 트리가 바뀌면 기본 루트도 첫 번째 1뎁스로 맞춤
   useEffect(() => {
@@ -294,7 +303,7 @@ const AppLayout = () => {
         >
           GNB
         </Typography.Title>
-        <Button onClick={clearToken}>로그아웃</Button>
+        <Button onClick={handleLogout}>로그아웃</Button>
       </Header>
 
       <Layout>

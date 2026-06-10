@@ -49,7 +49,7 @@ const SystemNoticePopup = () => {
 
       const visibleNotices = result.filter((notice) => !isNoticeHiddenToday(notice.noticeId));
 
-      setNotices(visibleNotices);
+      // setNotices(visibleNotices);
     };
 
     loadNotices();

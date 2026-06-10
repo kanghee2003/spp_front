@@ -9,7 +9,7 @@ import { makePageReqScheme, makePageResScheme } from '@/utils/page.util';
 
 /* ================================== SCHEME =========================================== */
 export const Sample1ListSearchScheme = z.object({
-  searchText: z.string({ required_error: '검색어를 입력해 주세요.' }).trim().min(1, '검색어를 입력해 주세요.'),
+  searchText: z.string({ required_error: '검색어를 입력해 주세요.' }).nullish(),
 });
 
 export const Sample1Scheme = z.object({
@@ -17,7 +17,7 @@ export const Sample1Scheme = z.object({
   cmGrpCd: z.string().nullish(),
   cmGrpNm: z.string().nullish(),
   cmGrpDesc: z.string().nullish(),
-  useFlag: z.boolean().nullish(),
+  useFlag: z.string().nullish(),
   ref01: z.string().nullish(),
   ref02: z.string().nullish(),
   ref03: z.string().nullish(),
@@ -40,9 +40,11 @@ export const Sample1Scheme = z.object({
 
 export const Sample1ListScheme = z.array(Sample1Scheme);
 
-export const Sample1SaveScheme = z.object({
-  list: z.array(Sample1Scheme),
-});
+export const Sample1SaveScheme = z
+  .object({
+    list: z.array(Sample1Scheme),
+  })
+  .superRefine((e, data) => {});
 
 export const Sample1ListSearchPageScheme = makePageReqScheme(Sample1ListSearchScheme);
 export const Sample1ListPageScheme = makePageResScheme(Sample1Scheme);

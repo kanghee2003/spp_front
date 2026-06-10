@@ -22,12 +22,15 @@ import { Key, useEffect, useRef, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 import SppDatePickerForm from '../../component/DatePicker/SppDatePickerForm';
 import { IudType } from '../../../../type/common.type';
+import SppSelectForm from '../../component/Select/SppSelectForm';
+import { useMessage } from '@/hook/useMessage';
 
 const Sample1 = () => {
   const alertFormErrors = useAlertFormErrors();
   const [search, setSeach] = useState<Sample1ListSearchPageReq>({ page: 1, pageSize: 10, searchText: '' });
   const [selectedRowKeys, setSelectedRowKeys] = useState<Key[]>([]);
   const tableRef = useRef<any>(null);
+  const { alertMessage, confirmMessage } = useMessage();
 
   const {
     control: searchFormControl,
@@ -141,7 +144,20 @@ const Sample1 = () => {
       render: (value, row) => {
         const index = findIndexById(row.uuid);
         if (index < 0) return;
-        return <SppCheckboxForm name={`list.${index}.useFlag`} control={saveFormControl} onChange={() => handleSaveDatachanged(index)} />;
+
+        return (
+          <SppSelectForm
+            name={`list.${index}.useFlag`}
+            defaultValue={'Y'}
+            style={{ width: 120 }}
+            control={saveFormControl}
+            options={[
+              { value: 'Y', label: '예' },
+              { value: 'N', label: '아니오' },
+            ]}
+            onChange={() => handleSaveDatachanged(index)}
+          />
+        );
       },
     },
     {
@@ -172,9 +188,11 @@ const Sample1 = () => {
     setSeach((prev) => ({ ...prev, searchText: value.searchText, page: 1 }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
+    if (!(await confirmMessage('저장하시겠습니까?'))) return;
     saveQuery.mutate(saveFormGetValues('list'), {
-      onSuccess: () => {
+      onSuccess: async () => {
+        await alertMessage('저장되었습니다.');
         refetchGroupData();
       },
     });
@@ -188,7 +206,7 @@ const Sample1 = () => {
     selectedRowKeys.reverse().map((v) => {
       const index = findIndexById(v as any);
       const row = saveFormGetValues(`list.${index}`);
-      if (row.comGrpCdSeq) {
+      if (row?.comGrpCdSeq) {
         saveFormUpdate(index, { ...row, iudType: IudType.D });
       } else {
         saveFormRemove(findIndexById(v as any));
@@ -262,12 +280,7 @@ const Sample1 = () => {
                 조회
               </SppButton>
 
-              <SppButton
-                type="default"
-                htmlType="button"
-                icon={<SaveOutlined />}
-                onClick={(e) => tableRef.current?.scrollToRowIndex(0, { behavior: 'smooth' })}
-              >
+              <SppButton type="default" htmlType="button" icon={<SaveOutlined />} onClick={saveFormHandleSubmit(handleSave)}>
                 저장
               </SppButton>
             </Space>
