@@ -26,4 +26,5 @@ bin/
 ### REACT_APP ###
 /node_module
 /target
+/dist
 
