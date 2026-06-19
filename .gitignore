@@ -27,4 +27,5 @@ bin/
 /node_module
 /target
 /dist
+/.vite
 
