@@ -261,7 +261,7 @@ export default function ControlledExpandTree() {
   }, [treeData, pendingFocusKey]);
 
   const onExpand: TreeProps['onExpand'] = useCallback(
-    async (nextExpandedKeys, info) => {
+    async (nextExpandedKeys: Parameters<NonNullable<TreeProps['onExpand']>>[0], info: Parameters<NonNullable<TreeProps['onExpand']>>[1]) => {
       setExpandedKeys(nextExpandedKeys);
 
       if (!info.expanded) {
@@ -283,10 +283,10 @@ export default function ControlledExpandTree() {
     [loadOrgUser],
   );
 
-  const onCheck: TreeProps['onCheck'] = useCallback((checkedKeys) => {
+  const onCheck: TreeProps['onCheck'] = useCallback((checkedKeys: Parameters<NonNullable<TreeProps['onCheck']>>[0]) => {
     const keys = Array.isArray(checkedKeys) ? checkedKeys : checkedKeys.checked;
 
-    setCheckedUserKeys(keys.filter((key) => String(key).startsWith('USER_')));
+    setCheckedUserKeys(keys.filter((key: React.Key) => String(key).startsWith('USER_')));
   }, []);
 
   const handleSearchUser = useCallback(async (keyword: string) => {
