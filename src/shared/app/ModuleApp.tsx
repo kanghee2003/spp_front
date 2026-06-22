@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
+import axios from 'axios';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { getMockMenuTree } from '@/config/mockMenuConfig';
@@ -6,9 +7,9 @@ import AppLayout from '@/layout/AppLayout';
 import { RouteLoaderProvider } from '@/provider/RouteLoaderProvider';
 import type { RouteLoader } from '@/router/routeLoaderContext';
 import { useAuthStore } from '@/store/auth.store';
-import { useMenuStore } from '@/store/menu.store';
+import { type MenuNode, useMenuStore } from '@/store/menu.store';
 import { useUserInfoStore } from '@/store/userInfo.store';
-import { type SystemKey } from '@/config/system.config';
+import { isMockMenuSystem, type SystemKey } from '@/config/system.config';
 import { getSystemBasePath, getSystemRootPath, normalizePath, setSystemCss } from '@/utils/system.util';
 
 type ModuleExtraRoute = {
@@ -38,6 +39,14 @@ export default function ModuleApp({ moduleKey, loadRoutes, extraRoutes = [] }: M
     // const res = await UserService.getUserInfo();
     // return res.data.data;
     return { userId: '1', userName: '1', admFlag: false };
+  };
+
+  const getMenuTreeFromApi = async (systemKey: SystemKey) => {
+    const res = await axios.get<{ data: MenuNode[] }>('/cm/menu/tree', {
+      params: { systemKey },
+    });
+
+    return res.data.data;
   };
 
   const modulePath = getSystemBasePath(moduleKey);
@@ -102,9 +111,14 @@ export default function ModuleApp({ moduleKey, loadRoutes, extraRoutes = [] }: M
 
       try {
         setMenuTree([]);
-        // const res = await MenuService.getMenuTree(moduleKey);
-        // setMenuTree(res.data.data);
-        setMenuTree(getMockMenuTree(moduleKey));
+
+        if (isMockMenuSystem(moduleKey)) {
+          setMenuTree(getMockMenuTree(moduleKey));
+          return;
+        }
+
+        const nextMenuTree = await getMenuTreeFromApi(moduleKey);
+        setMenuTree(nextMenuTree);
       } catch (e) {
         setMenuTree([]);
       } finally {

@@ -5,7 +5,6 @@ import { useMemo, useState } from 'react';
 import { useMessage } from '@/hook/useMessage';
 import { useMenuStore } from '@/store/menu.store';
 import { getSystemRootPath } from '@/utils/system.util';
-import { SYSTEM_LINK_LIST } from '@/config/system.config';
 import { SYSTEM_KEY_LIST, SystemKey } from '@/config/system.constant';
 
 type SystemLink = {
@@ -24,7 +23,6 @@ const SystemLinks = () => {
   // 실제 링크가 있다면 href만 바꿔주면 됨
   const links = useMemo<SystemLink[]>(
     () => [
-      ...SYSTEM_LINK_LIST.map(({ systemKey, label }) => ({ label, href: systemKey })),
       { label: '영상정보중앙 관리시스템', href: '#' },
       { label: '이상징후모니터링', href: '#' },
       { label: '정보보호모니터링', href: '#' },

@@ -1,17 +1,24 @@
-import { DEFAULT_SYSTEM_KEY, SYSTEM_KEY_LIST, SystemKey } from './system.constant';
+import { DEFAULT_SYSTEM_KEY, SYSTEM_BASE_CONFIG, type SystemKey } from './system.constant';
+
+export {
+  DEFAULT_SYSTEM_KEY,
+  PORTAL_BUILD_TARGET,
+  SYSTEM_BASE_CONFIG,
+  SYSTEM_KEY_LIST,
+  isAppBuildTarget,
+  isSystemKey,
+} from './system.constant';
+
+export type { AppBuildTarget, SystemKey } from './system.constant';
 
 export const SYSTEM_CONFIG = {
   spp: {
-    systemKey: 'spp',
-    rootPath: '/spp',
+    ...SYSTEM_BASE_CONFIG.spp,
     apiBaseUrl: import.meta.env.VITE_SPP_API_BASE_URL || import.meta.env.VITE_API_BASE_URL,
-    label: '문서반출 시스템',
   },
   etc: {
-    systemKey: 'etc',
-    rootPath: '/etc',
+    ...SYSTEM_BASE_CONFIG.etc,
     apiBaseUrl: import.meta.env.VITE_ETC_API_BASE_URL || import.meta.env.VITE_API_BASE_URL,
-    label: '개인정보 관리시스템',
   },
 } as const satisfies Record<
   SystemKey,
@@ -20,6 +27,7 @@ export const SYSTEM_CONFIG = {
     rootPath: `/${SystemKey}`;
     apiBaseUrl: string;
     label: string;
+    useMockMenu: boolean;
   }
 >;
 
@@ -31,7 +39,6 @@ export const getApiBaseUrlBySystemKey = (systemKey: SystemKey = DEFAULT_SYSTEM_K
   return SYSTEM_CONFIG[systemKey].apiBaseUrl;
 };
 
-export const SYSTEM_LINK_LIST = SYSTEM_KEY_LIST.map((systemKey) => ({
-  systemKey,
-  label: SYSTEM_CONFIG[systemKey].label,
-})) satisfies Array<{ systemKey: SystemKey; label: string }>;
+export const isMockMenuSystem = (systemKey: SystemKey) => {
+  return SYSTEM_CONFIG[systemKey].useMockMenu;
+};
