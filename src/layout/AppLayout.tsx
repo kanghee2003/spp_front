@@ -144,14 +144,19 @@ const AppLayout = () => {
     return () => document.removeEventListener('mousedown', onDown);
   }, [floatingOpen]);
 
-  // URL은 시스템 prefix로 고정(예: /spp, /etc)
+  // URL 보정
+  // - 시스템 앱의 기준 URL은 /spp/, /etc/ 형태로 유지한다.
+  // - /spp/ 를 /spp 로 정규화하지 않는다.
+  // - 현재 시스템 prefix 밖에서 실행된 경우에만 현재 시스템 루트로 보정한다.
   useEffect(() => {
     try {
-      const nextPath = `/${systemKey}`;
+      const modulePath = `/${systemKey}`;
+      const pathname = window.location.pathname;
       const search = window.location.search;
+      const isInCurrentModule = pathname === modulePath || pathname.startsWith(`${modulePath}/`);
 
-      if (window.location.pathname !== nextPath) {
-        window.history.replaceState(null, '', `${nextPath}${search}`);
+      if (!isInCurrentModule) {
+        window.history.replaceState(null, '', `${modulePath}/${search}`);
       }
     } catch {
       // ignore

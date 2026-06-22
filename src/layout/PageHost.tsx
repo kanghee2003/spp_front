@@ -1,6 +1,6 @@
 import { useMemo, type ReactNode } from 'react';
 import { PageKeyProvider } from '@/layout/PageKeyContext';
-import { loadRoutes } from '@/router/AutoRoutes';
+import { useRouteLoader } from '@/router/routeLoaderContext';
 import { useMdiStore } from '@/store/mdi.store';
 import { useMenuStore } from '@/store/menu.store';
 
@@ -9,7 +9,8 @@ const PageHost = () => {
   const activeKey = useMdiStore((s) => s.activeKey);
   const systemKey = useMenuStore((s) => s.systemKey);
   const menuTree = useMenuStore((s) => s.menuTree);
-  const routes = useMemo(() => loadRoutes(systemKey, menuTree), [systemKey, menuTree]);
+  const loadRoutes = useRouteLoader();
+  const routes = useMemo(() => loadRoutes(systemKey, menuTree), [loadRoutes, systemKey, menuTree]);
 
   const elementByKey = useMemo(() => {
     const m: Record<string, ReactNode> = {};

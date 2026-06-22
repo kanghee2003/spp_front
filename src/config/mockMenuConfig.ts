@@ -1,5 +1,5 @@
 import { MenuType, type MenuNode } from '@/store/menu.store';
-import { SystemKey } from '@/utils/system.util';
+import { type SystemKey } from '@/config/system.config';
 
 // AppLayout 등에서 type을 import할 수 있도록 re-export
 export type { MenuNode } from '@/store/menu.store';

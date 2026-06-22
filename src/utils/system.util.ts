@@ -1,3 +1,5 @@
+import { DEFAULT_SYSTEM_KEY, SYSTEM_KEY_LIST, isSystemKey, type SystemKey } from '@/config/system.config';
+
 type Loader = () => Promise<string>;
 
 const modules = import.meta.glob<string>('/src/styles/systems/*_index.scss', {
@@ -31,17 +33,37 @@ export async function setSystemCss(systemKey: string) {
   ensureStyleTag().textContent = css;
 }
 
-export const SYSTEM_KEY_LIST = ['spp', 'etc'] as const;
+export const normalizePath = (pathname: string) => {
+  const normalized = pathname.replace(/\/+$/, '');
+  return normalized || '/';
+};
 
-export type SystemKey = (typeof SYSTEM_KEY_LIST)[number];
+export const getSystemBasePath = (systemKey: SystemKey = DEFAULT_SYSTEM_KEY) => `/${systemKey}`;
+
+export const getSystemRootPath = (systemKey: SystemKey = DEFAULT_SYSTEM_KEY) => `${getSystemBasePath(systemKey)}/`;
 
 export const getSystemKeyFromPath = (pathname?: string): SystemKey => {
   try {
     const targetPath = pathname ?? window.location.pathname;
     const seg = targetPath.split('/').filter(Boolean)[0];
 
-    return SYSTEM_KEY_LIST.includes(seg as SystemKey) ? (seg as SystemKey) : 'spp';
+    return isSystemKey(seg) ? seg : DEFAULT_SYSTEM_KEY;
   } catch {
-    return 'spp';
+    return DEFAULT_SYSTEM_KEY;
   }
+};
+
+export const getSystemKeyFromRootPath = (pathname: string): SystemKey | undefined => {
+  const normalized = normalizePath(pathname);
+
+  return SYSTEM_KEY_LIST.find((systemKey) => normalized === getSystemBasePath(systemKey));
+};
+
+export const isSystemPath = (pathname: string) => {
+  const normalized = normalizePath(pathname);
+
+  return SYSTEM_KEY_LIST.some((systemKey) => {
+    const systemPath = getSystemBasePath(systemKey);
+    return normalized === systemPath || normalized.startsWith(`${systemPath}/`);
+  });
 };

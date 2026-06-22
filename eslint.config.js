@@ -8,6 +8,7 @@ import importPlugin from 'eslint-plugin-import';
 
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 
 import prettierPlugin from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';

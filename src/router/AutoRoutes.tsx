@@ -3,6 +3,7 @@ import React from 'react';
 import { DEFAULT_SCREEN_KEY } from '@/config/mockMenuConfig';
 import { MenuType, type MenuNode } from '@/store/menu.store';
 import NotFoundPage from '@/error/NotFoundPage';
+import LazyLoadErrorBoundary from '@/shared/app/LazyLoadErrorBoundary';
 
 export type AppRoute = {
   /** 탭/메뉴에서 사용하는 화면 고유 key (백엔드가 내려준다고 가정) */
@@ -76,9 +77,11 @@ export function loadRoutes(systemKey: string, menuTree: MenuNode[]): AppRoute[] 
     return {
       key: leaf.key,
       element: (
-        <React.Suspense fallback={<div style={{ padding: 16 }}>Loading…</div>}>
-          <Lazy />
-        </React.Suspense>
+        <LazyLoadErrorBoundary resetKey={leaf.key}>
+          <React.Suspense fallback={<div style={{ padding: 16 }}>Loading…</div>}>
+            <Lazy />
+          </React.Suspense>
+        </LazyLoadErrorBoundary>
       ),
     };
   });

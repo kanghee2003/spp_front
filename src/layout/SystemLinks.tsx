@@ -2,11 +2,11 @@ import { LinkOutlined, MinusOutlined, PlusOutlined } from '@ant-design/icons';
 import { Button, Drawer, List, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
-import { getMockMenuTree } from '@/config/mockMenuConfig';
 import { useMessage } from '@/hook/useMessage';
 import { useMdiStore } from '@/store/mdi.store';
 import { useMenuStore } from '@/store/menu.store';
-import { SYSTEM_KEY_LIST, type SystemKey } from '@/utils/system.util';
+import { SYSTEM_KEY_LIST, SYSTEM_LINK_LIST, type SystemKey } from '@/config/system.config';
+import { getSystemRootPath } from '@/utils/system.util';
 
 type SystemLink = {
   label: string;
@@ -17,9 +17,6 @@ const SystemLinks = () => {
   const [open, setOpen] = useState(false);
   const { alertMessage } = useMessage();
   const systemKey = useMenuStore((s) => s.systemKey);
-  const setSystemKey = useMenuStore((s) => s.setSystemKey);
-  const setMenuTree = useMenuStore((s) => s.setMenuTree);
-  const resetTabs = useMdiStore((s) => s.resetTabs);
 
   // Header(=GNB) + MDI 탭바 높이 만큼 내려서, "MDI 바로 밑"에 붙게 처리
   const TOP_OFFSET = 64 + 52;
@@ -27,8 +24,7 @@ const SystemLinks = () => {
   // 실제 링크가 있다면 href만 바꿔주면 됨
   const links = useMemo<SystemLink[]>(
     () => [
-      { label: '문서반출 시스템', href: 'spp' },
-      { label: '개인정보 관리시스템', href: 'etc' },
+      ...SYSTEM_LINK_LIST.map(({ systemKey, label }) => ({ label, href: systemKey })),
       { label: '영상정보중앙 관리시스템', href: '#' },
       { label: '이상징후모니터링', href: '#' },
       { label: '정보보호모니터링', href: '#' },
@@ -109,18 +105,11 @@ const SystemLinks = () => {
                   return;
                 }
 
-                setSystemKey(nextSystem);
-                setMenuTree(getMockMenuTree(nextSystem));
-                resetTabs();
                 setOpen(false);
 
-                try {
-                  const nextPath = `/${nextSystem}`;
-                  if (window.location.pathname !== nextPath) {
-                    window.history.replaceState(null, '', nextPath);
-                  }
-                } catch {
-                  // ignore
+                const nextPath = getSystemRootPath(nextSystem);
+                if (window.location.pathname !== nextPath) {
+                  window.location.href = nextPath;
                 }
               }}
             >

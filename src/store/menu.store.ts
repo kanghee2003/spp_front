@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { getSystemKeyFromPath, type SystemKey } from '@/utils/system.util';
+import { type SystemKey } from '@/config/system.config';
+import { getSystemKeyFromPath } from '@/utils/system.util';
 
 export enum MenuType {
   FOLDER = 'F',

@@ -5,6 +5,7 @@ import { useUserInfoStore } from '@/store/userInfo.store';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/auth.store';
 import { generateUuidV4 } from '@/utils/common.util';
+import { getSystemRootPath } from '@/utils/system.util';
 
 type AdminLoginProps = {
   userId: string;
@@ -20,14 +21,14 @@ const AdminLogin = () => {
   const onFinish = async (values: AdminLoginProps) => {
     console.log('ADMIN LOGIN', values);
     setToken(generateUuidV4());
-    navigate('/spp');
+    navigate(getSystemRootPath());
   };
 
   useEffect(() => {
     if (token) {
-      navigate('/spp');
+      navigate(getSystemRootPath());
     }
-  }, [token]);
+  }, [token, navigate]);
 
   return (
     <div

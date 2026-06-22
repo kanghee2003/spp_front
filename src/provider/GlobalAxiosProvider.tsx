@@ -6,6 +6,7 @@ import qs from 'qs';
 import { message } from 'antd';
 import { ErrorCode, ErrorResponse } from '@/type/common.type';
 import { useLoadingStore } from '@/store/loading.store';
+import { useAuthStore } from '@/store/auth.store';
 
 interface GlobalAxiosInterceptorProps {
   children: React.ReactNode;
@@ -70,7 +71,11 @@ const GlobalAxiosProvider = (props: GlobalAxiosInterceptorProps) => {
         message.error(res.data.message);
       }
       if (res.data?.code === ErrorCode.INVALID_SESSION_ERROR) {
-        location.replace('/');
+        useAuthStore.getState().clearToken();
+
+        if (window.location.pathname !== '/') {
+          window.location.replace('/');
+        }
       }
 
       return Promise.resolve({ ...res, data: res.data || {} });

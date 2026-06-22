@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Empty, Tabs } from 'antd';
 
 import NotFoundPage from '@/error/NotFoundPage';
+import LazyLoadErrorBoundary from '@/shared/app/LazyLoadErrorBoundary';
 import { MenuType, type MenuNode } from '@/store/menu.store';
 import { useMenuStore } from '@/store/menu.store';
 import { useMdiStore } from '@/store/mdi.store';
@@ -9,14 +10,14 @@ import { useMdiContext } from '@/hook/useMdiContext';
 
 type PageModule = { default: React.ComponentType<any> };
 
-// src/pages 아래의 모든 TSX를 로딩할 수 있게 준비
-const pageModules = import.meta.glob('/src/pages/*/view/**/*.tsx') as Record<string, () => Promise<PageModule>>;
+// SPP 탭 화면은 SPP 앱 entry 기준으로 빌드될 때도 안정적으로 잡히도록 상대 glob을 사용한다.
+const pageModules = import.meta.glob('../../view/**/*.tsx') as Record<string, () => Promise<PageModule>>;
 
-function fileToSystemAndPagePath(file: string): { systemKey: string; pagePath: string } | null {
-  // "/src/pages/spp/view/home/Dashboard.tsx" -> {systemKey:'spp', pagePath:'home/Dashboard'}
-  const m = file.match(/^(?:\.\.\/)?(?:\/src\/)?pages\/([^/]+)\/view\/(.+)\.tsx$/);
+function fileToPagePath(file: string): string | null {
+  // "../../view/sample/TabControlTab1.tsx" -> "sample/TabControlTab1"
+  const m = file.match(/(?:^|\/)view\/(.+)\.tsx$/);
   if (!m) return null;
-  return { systemKey: m[1], pagePath: m[2] };
+  return normalizePath(m[1]);
 }
 
 function normalizePath(p?: string): string {
@@ -46,35 +47,30 @@ function getTabsUnderViewByKey(tree: MenuNode[], viewKey: string): MenuNode[] {
 }
 
 function buildLoaderMaps() {
-  const loaderBySystemPath = new Map<string, Map<string, () => Promise<PageModule>>>();
-  const loaderBySystemKey = new Map<string, Map<string, () => Promise<PageModule>>>();
+  const loaderByPath = new Map<string, () => Promise<PageModule>>();
+  const loaderByKey = new Map<string, () => Promise<PageModule>>();
 
   for (const [file, loader] of Object.entries(pageModules)) {
-    const parsed = fileToSystemAndPagePath(file);
-    if (!parsed) continue;
+    const pagePath = fileToPagePath(file);
+    if (!pagePath) continue;
 
-    const { systemKey, pagePath } = parsed;
-
-    if (!loaderBySystemPath.has(systemKey)) loaderBySystemPath.set(systemKey, new Map());
-    loaderBySystemPath.get(systemKey)!.set(pagePath, loader);
+    loaderByPath.set(pagePath, loader);
 
     // key 기반 폴백: ".../TabControlTab1" 같은 파일을 tabKey로도 찾을 수 있게 매핑
     const key = pagePath.split('/').slice(-1)[0];
-    if (!loaderBySystemKey.has(systemKey)) loaderBySystemKey.set(systemKey, new Map());
-    loaderBySystemKey.get(systemKey)!.set(key, loader);
+    loaderByKey.set(key, loader);
   }
 
-  return { loaderBySystemPath, loaderBySystemKey };
+  return { loaderByPath, loaderByKey };
 }
 
-const { loaderBySystemPath, loaderBySystemKey } = buildLoaderMaps();
+const { loaderByPath, loaderByKey } = buildLoaderMaps();
 
 type SppPageTabsProps = {
   onChange?: (activeKey: string) => void;
 };
 
 const SppPageTabs = ({ onChange }: SppPageTabsProps) => {
-  const systemKey = useMenuStore((s) => s.systemKey);
   const menuTree = useMenuStore((s) => s.menuTree);
 
   const { viewKey, tabKey } = useMdiContext();
@@ -128,9 +124,6 @@ const SppPageTabs = ({ onChange }: SppPageTabsProps) => {
   }, [activeTabKey, onChange]);
 
   const items = useMemo(() => {
-    const loaderByPath = loaderBySystemPath.get(systemKey) ?? new Map<string, () => Promise<PageModule>>();
-    const loaderByKey = loaderBySystemKey.get(systemKey) ?? new Map<string, () => Promise<PageModule>>();
-
     return tabNodes.map((t) => {
       // 1) path가 정확히 매칭되면 path 기반 사용
       // 2) 프로젝트 구조상 tab 파일이 "sample/TabControlTab1" 처럼 존재할 수 있어서 key 기반 폴백
@@ -150,13 +143,15 @@ const SppPageTabs = ({ onChange }: SppPageTabsProps) => {
         key: t.key,
         label: t.label,
         children: (
-          <React.Suspense fallback={<div style={{ padding: 16 }}>Loading…</div>}>
-            <Lazy />
-          </React.Suspense>
+          <LazyLoadErrorBoundary resetKey={t.key}>
+            <React.Suspense fallback={<div style={{ padding: 16 }}>Loading…</div>}>
+              <Lazy />
+            </React.Suspense>
+          </LazyLoadErrorBoundary>
         ),
       };
     });
-  }, [systemKey, tabNodes]);
+  }, [tabNodes]);
 
   if (!viewKey) return null;
 

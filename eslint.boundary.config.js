@@ -4,8 +4,11 @@ import importPlugin from 'eslint-plugin-import';
 
 import fs from 'node:fs';
 import path from 'node:path';
+import process from 'node:process';
 
-// Boundary lint only: src/pages/<system>/... cannot import src/pages/<otherSystem>/...
+// Boundary lint only:
+// src/pages/<system>/... can import its own src/pages/<system>/...
+// src/pages/<system>/... cannot import another src/pages/<otherSystem>/...
 const pagesRoot = path.resolve(process.cwd(), 'src/pages');
 let pageSystems = [];
 try {
@@ -17,52 +20,67 @@ try {
   pageSystems = [];
 }
 
+const basePageConfig = {
+  languageOptions: {
+    parser: tsParser,
+    parserOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      ecmaFeatures: { jsx: true },
+    },
+    globals: {
+      ...globals.browser,
+    },
+  },
+  plugins: {
+    import: importPlugin,
+  },
+  settings: {
+    'import/resolver': {
+      typescript: {
+        project: './tsconfig.json',
+      },
+    },
+  },
+};
+
+function createBoundaryConfig(systemKey) {
+  const otherSystems = pageSystems.filter((targetSystem) => targetSystem !== systemKey);
+
+  return {
+    files: [`src/pages/${systemKey}/**/*.{ts,tsx}`],
+    ...basePageConfig,
+    rules: {
+      'import/no-restricted-paths': [
+        'error',
+        {
+          zones: otherSystems.map((otherSystem) => ({
+            target: `./src/pages/${systemKey}`,
+            from: `./src/pages/${otherSystem}`,
+            message: `${systemKey} 시스템 코드는 ${otherSystem} 시스템의 pages 코드를 참조할 수 없습니다. 공용 코드는 shared로 이동하세요.`,
+          })),
+        },
+      ],
+
+      // Alias imports, e.g. @/pages/etc/..., are blocked per source system.
+      // Self imports, e.g. SPP -> @/pages/spp/..., are allowed.
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: otherSystems.map((otherSystem) => ({
+            group: [`@/pages/${otherSystem}/**`, `src/pages/${otherSystem}/**`],
+            message: `${systemKey} 시스템 코드는 ${otherSystem} 시스템의 pages 코드를 참조할 수 없습니다. 공용 코드는 shared로 이동하세요.`,
+          })),
+        },
+      ],
+    },
+  };
+}
+
 export default [
   {
     ignores: ['dist/**', 'node_modules/**', '.npm-cache/**', 'eslint.config.js', 'eslint.boundary.config.js'],
   },
 
-  {
-    files: ['src/pages/**/*.{ts,tsx}'],
-    languageOptions: {
-      parser: tsParser,
-      parserOptions: {
-        ecmaVersion: 'latest',
-        sourceType: 'module',
-        ecmaFeatures: { jsx: true },
-      },
-      globals: {
-        ...globals.browser,
-      },
-    },
-    plugins: {
-      import: importPlugin,
-    },
-    settings: {
-      // Needed so alias imports (e.g. "@/pages/..." from tsconfig paths) can be resolved
-      // and checked by import/no-restricted-paths.
-      'import/resolver': {
-        typescript: {
-          project: './tsconfig.json',
-        },
-      },
-    },
-    rules: {
-      // pairwise zones: allow self imports, block cross-system imports
-      'import/no-restricted-paths': [
-        'error',
-        {
-          zones: pageSystems.flatMap((fromSystem) =>
-            pageSystems
-              .filter((targetSystem) => targetSystem !== fromSystem)
-              .map((targetSystem) => ({
-                from: `./src/pages/${fromSystem}`,
-                target: `./src/pages/${targetSystem}`,
-                message: `${fromSystem} 시스템 코드는 다른 시스템의 pages 코드를 참조할 수 없습니다. 공용 코드는 shared로 이동하세요.`,
-              })),
-          ),
-        },
-      ],
-    },
-  },
+  ...pageSystems.map(createBoundaryConfig),
 ];
