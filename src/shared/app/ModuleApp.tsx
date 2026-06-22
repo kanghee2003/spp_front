@@ -1,24 +1,28 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { getMockMenuTree } from '@/config/mockMenuConfig';
-import AdminLogin from '@/layout/login/AdminLogin';
 import AppLayout from '@/layout/AppLayout';
-import Login from '@/layout/login/Login';
 import { RouteLoaderProvider } from '@/provider/RouteLoaderProvider';
 import type { RouteLoader } from '@/router/routeLoaderContext';
 import { useAuthStore } from '@/store/auth.store';
 import { useMenuStore } from '@/store/menu.store';
 import { useUserInfoStore } from '@/store/userInfo.store';
 import { type SystemKey } from '@/config/system.config';
-import { getSystemRootPath, setSystemCss } from '@/utils/system.util';
+import { getSystemBasePath, getSystemRootPath, normalizePath, setSystemCss } from '@/utils/system.util';
+
+type ModuleExtraRoute = {
+  path: string;
+  element: ReactNode;
+};
 
 type ModuleAppProps = {
   moduleKey: SystemKey;
   loadRoutes: RouteLoader;
+  extraRoutes?: ModuleExtraRoute[];
 };
 
-export default function ModuleApp({ moduleKey, loadRoutes }: ModuleAppProps) {
+export default function ModuleApp({ moduleKey, loadRoutes, extraRoutes = [] }: ModuleAppProps) {
   const token = useAuthStore((s) => s.token);
   const clearToken = useAuthStore((s) => s.clearToken);
 
@@ -36,13 +40,32 @@ export default function ModuleApp({ moduleKey, loadRoutes }: ModuleAppProps) {
     return { userId: '1', userName: '1', admFlag: false };
   };
 
+  const modulePath = getSystemBasePath(moduleKey);
+  const moduleRootPath = getSystemRootPath(moduleKey);
+  const currentPath = normalizePath(window.location.pathname);
+  const isCurrentModulePath = currentPath === modulePath || currentPath.startsWith(`${modulePath}/`);
+
+
   useEffect(() => {
+    if (isCurrentModulePath) return;
+
+    window.location.replace('/');
+  }, [isCurrentModulePath]);
+
+  useEffect(() => {
+    if (!isCurrentModulePath) return;
+
     setSystemKey(moduleKey);
     setSystemCss(moduleKey);
-  }, [moduleKey, setSystemKey]);
+  }, [moduleKey, setSystemKey, isCurrentModulePath]);
 
   useEffect(() => {
     const fetchUserInfo = async () => {
+      if (!isCurrentModulePath) {
+        setLoading(false);
+        return;
+      }
+
       if (!token) {
         setUserInfo(undefined);
         setMenuTree([]);
@@ -62,10 +85,15 @@ export default function ModuleApp({ moduleKey, loadRoutes }: ModuleAppProps) {
     };
 
     fetchUserInfo();
-  }, [token, clearToken, setUserInfo, setMenuTree]);
+  }, [token, clearToken, setUserInfo, setMenuTree, isCurrentModulePath]);
 
   useEffect(() => {
     const fetchMenuTree = async () => {
+      if (!isCurrentModulePath) {
+        setLoading(false);
+        return;
+      }
+
       if (!token || !userInfo) {
         setMenuTree([]);
         setLoading(false);
@@ -85,19 +113,26 @@ export default function ModuleApp({ moduleKey, loadRoutes }: ModuleAppProps) {
     };
 
     fetchMenuTree();
-  }, [token, userInfo, moduleKey, setMenuTree]);
+  }, [token, userInfo, moduleKey, setMenuTree, isCurrentModulePath]);
 
-  const modulePath = `/${moduleKey}`;
-  const moduleRootPath = getSystemRootPath(moduleKey);
+  if (!isCurrentModulePath) {
+    return null;
+  }
 
   return (
     <RouteLoaderProvider loader={loadRoutes}>
       <Routes>
-        <Route path="/" element={token ? <Navigate to={moduleRootPath} replace /> : <Login />} />
+        <Route path="/" element={<Navigate to={token ? moduleRootPath : '/'} replace />} />
 
-        <Route path={`${modulePath}/admin`} element={token ? <Navigate to={moduleRootPath} replace /> : <AdminLogin />} />
+        {extraRoutes.map((route) => (
+          <Route
+            key={route.path}
+            path={`${modulePath}${route.path.startsWith('/') ? route.path : `/${route.path}`}`}
+            element={token ? route.element : <Navigate to="/" replace />}
+          />
+        ))}
 
-        <Route path={`${modulePath}/*`} element={!token ? <Login /> : loading ? <div /> : <AppLayout />} />
+        <Route path={`${modulePath}/*`} element={!token ? <Navigate to="/" replace /> : loading ? <div /> : <AppLayout />} />
 
         <Route path="*" element={<Navigate to={token ? moduleRootPath : '/'} replace />} />
       </Routes>

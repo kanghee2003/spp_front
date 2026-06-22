@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Route, Routes, useLocation } from 'react-router-dom';
 
 import { DEFAULT_SYSTEM_KEY } from '@/config/system.config';
 import AdminLogin from '@/layout/login/AdminLogin';
@@ -14,15 +14,28 @@ const isPortalPath = (pathname: string) => {
   return normalized === '/' || normalized === '/admin';
 };
 
+const isAuthPath = (pathname: string) => {
+  const normalized = normalizePath(pathname);
+  return normalized === '/auth' || normalized.startsWith('/auth/');
+};
+
 export default function PortalApp() {
   const token = useAuthStore((s) => s.token);
+  const location = useLocation();
 
-  const pathname = window.location.pathname;
+  const pathname = location.pathname;
   const portalPath = isPortalPath(pathname);
+  const authPath = isAuthPath(pathname);
   const systemPath = isSystemPath(pathname);
   const systemRootKey = getSystemKeyFromRootPath(pathname);
+  const invalidRootPath = !portalPath && !authPath && !systemPath;
 
   useEffect(() => {
+    if (invalidRootPath) {
+      window.location.replace('/');
+      return;
+    }
+
     if (!token) return;
 
     if (portalPath) {
@@ -33,9 +46,9 @@ export default function PortalApp() {
     if (systemRootKey && pathname === `/${systemRootKey}`) {
       window.location.replace(getSystemRootPath(systemRootKey));
     }
-  }, [token, portalPath, systemRootKey, pathname]);
+  }, [token, portalPath, systemRootKey, pathname, invalidRootPath]);
 
-  if (token && (portalPath || systemRootKey)) {
+  if (invalidRootPath || (token && (portalPath || systemRootKey))) {
     return null;
   }
 
@@ -47,7 +60,7 @@ export default function PortalApp() {
     <Routes>
       <Route path="/" element={<Login />} />
       <Route path="/admin" element={<AdminLogin />} />
-      <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="*" element={<Login />} />
     </Routes>
   );
 }

@@ -43,6 +43,7 @@ function buildTree(nodes: MenuItem[]): DataNode[] {
   }
 
   const make = (parentId: string | null): DataNode[] => {
+    console.log('x');
     const children = (byParent.get(parentId) ?? []).sort((a, b) => (a.sortNo ?? 0) - (b.sortNo ?? 0));
     return children.map((c) => ({
       key: c.id,

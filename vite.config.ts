@@ -27,7 +27,9 @@ const createDevHtmlEntryRewritePlugin = (projectRoot: string): Plugin => {
     apply: 'serve',
     configureServer(server) {
       server.middlewares.use(async (req, res, next) => {
-        const reqPath = req.url?.split('?')[0] ?? '';
+        const originalUrl = req.url ?? '';
+        const [reqPath, queryString = ''] = originalUrl.split('?');
+        const search = queryString ? `?${queryString}` : '';
         const accept = req.headers.accept ?? '';
         const isHtmlRequest = req.method === 'GET' && accept.includes('text/html');
 
@@ -50,7 +52,7 @@ const createDevHtmlEntryRewritePlugin = (projectRoot: string): Plugin => {
 
         if (reqPath === systemPath) {
           res.statusCode = 302;
-          res.setHeader('Location', `${systemPath}/`);
+          res.setHeader('Location', `${systemPath}/${search}`);
           res.end();
           return;
         }
