@@ -7,12 +7,14 @@ import { message } from 'antd';
 import { ErrorCode, ErrorResponse } from '@/type/common.type';
 import { useLoadingStore } from '@/store/loading.store';
 import { useAuthStore } from '@/store/auth.store';
+import { getApiBaseUrlBySystemKey } from '@/config/system.config';
+import { DEFAULT_SYSTEM_KEY, SystemKey } from '@/config/system.constant';
 
 interface GlobalAxiosInterceptorProps {
   children: React.ReactNode;
+  apiSystemKey?: SystemKey;
 }
 
-const baseURL = import.meta.env.VITE_API_BASE_URL;
 const devUserId = import.meta.env.VITE_DEV_USER_ID;
 
 const getCookie = (name: string) => {
@@ -22,6 +24,7 @@ const getCookie = (name: string) => {
 
 const GlobalAxiosProvider = (props: GlobalAxiosInterceptorProps) => {
   const [isReadyAxios, setIsReadyAxios] = useState(false);
+  const baseURL = getApiBaseUrlBySystemKey(props.apiSystemKey ?? DEFAULT_SYSTEM_KEY);
 
   const addLoading = useLoadingStore((state) => state.add);
   const removeLoading = useLoadingStore((state) => state.remove);
@@ -50,10 +53,14 @@ const GlobalAxiosProvider = (props: GlobalAxiosInterceptorProps) => {
         'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJwcm9maWxlVXJsIjoiaHR0cHM6Ly9zd2luZ2Rldi5zaGluaGFuLmNvbS9la3AvbmFtZUNhcmRVUkwvMDFLMFhYWFhYWFhYWFhYWCIsInJvbGVzIjpbeyJyb2xlSWQiOiJSMjczNDEzNzcwMTgzMDAyOSIsInJvbGVOYW1lIjoic3RhbGst7Jew64-ZIO2FjOyKpO2KuDQifSx7InJvbGVJZCI6IlIxMDAwMDAwMDAwMDAwMDAxIiwicm9sZU5hbWUiOiJVU0VSIn1dLCJkZXBhcnRtZW50cyI6W3siZGVwYXJ0bWVudElkIjoiRDYzMzE3MDg2MCIsImRlcGFydG1lbnRObyI6IklNMDgiLCJkZXBhcnRtZW50TmFtZSI6IkRT6rCc67Cc7YyAIiwiZGVwYXJ0bWVudFBhdGgiOiJDMzAwMjIwNjE5L0Q4MTI1Mzg1NDAvRDEyNDIwODU3Ny9ENjQzNzA1NTAyL0Q2MzMxNzA4NjAiLCJkZXBhcnRtZW50TmFtZVBhdGgiOiLsi6DtlZzsnYDtlokv67O467aA67aA7IScL1RlY2jqt7jro7kvVGVjaOq4sO2ajeu2gC9EU-qwnOuwnO2MgCIsImJhc2VEZXBhcnRtZW50WW4iOiJZIn1dLCJvdGhlcldvcmtlcnMiOlt7ImNvbXBhbnlDb2RlIjoiU0giLCJwb3NpdGlvbk5hbWUiOiJT7ISg7J6EIiwiZW1wbG95ZWVOYW1lIjoi7ZmN6ri464-ZIiwiZW1wbG95ZWVObyI6IjIyMTIxOTAzIn1dLCJwZXJzb25hbFBob25lIjoiMDEwLTAwMDAtNTI2NyIsImNvbXBhbnlOYW1lIjoi7Iug7ZWc7J2A7ZaJIiwibWVtbyI6IiIsImVtcGxveWVlTm8iOiIyMzExMTAwOCIsInBvc2l0aW9uTmFtZSI6IiIsIndvcmtMb2NhdGlvbiI6IuyEnOyauO2KueuzhOyLnCDspJHqtawg64Ko64yA66y466GcMTDquLggMjkg67Cx64WE6rSAIDTsuLUiLCJ1bml0VHlwZSI6IkVNUExPWUVFIiwid2ViRW1haWwiOiIqKioqKipAc2hpbmhhbi5jb20iLCJjb21wYW55Tm8iOiJTSCIsImNvbXBhbnlFbWFpbCI6InNoMjMxMTEwMDhAc3dpbmdkZXYuc2hpbmhhbi5jb20iLCJjb21wYW55UGhvbmUiOiI1LTAwMDAiLCJwcm9maWxlSW1hZ2VVcmwiOiIiLCJwYXJlbnRHd0NtcENkIjoiIiwiZGVwYXJ0bWVudE5hbWUiOiIiLCJlbXBsb3llZU5hbWUiOiLquYDrr7ztnawiLCJjaGFyZ2VXb3JrIjoi66y47ISc67CY7Lac7Iuc7Iqk7YWcXG5IU0JDIDnsuLUgLyDsgrzshLHrs7jqtIAgMuy4tSIsImlubmVyTGluZVBob25lIjoiNS0wMDAwIiwicGFyZW50Q29tcGFueUNvZGUiOiIiLCJhYnNlbnRlZWlzbUluZm8iOiIiLCJmYXhOdW1iZXIiOiIiLCJzdWIiOiIyMzExMTAwOCIsImlhdCI6MTc2OTY2NjIzMywiZXhwIjoxNzY5NjY5ODMzfQ.RXJFEeUKzLHNRSJQGhKXPmxhrmYsf0oEGAXO-6g6JZo',
       );
 
+      if (!config.baseURL) {
+        config.baseURL = baseURL;
+      }
+
       config.headers = headers;
       return config;
     },
-    [addLoading, devUserId],
+    [addLoading, baseURL],
   );
 
   const onRequestRejected = useCallback((error: AxiosError): Promise<AxiosError> => {
@@ -119,7 +126,7 @@ const GlobalAxiosProvider = (props: GlobalAxiosInterceptorProps) => {
       axios.interceptors.request.eject(reqId);
       axios.interceptors.response.eject(resId);
     };
-  }, [onRequestFulfilled, onRequestRejected, onResponseFulfilled, onResponseRejected]);
+  }, [baseURL, onRequestFulfilled, onRequestRejected, onResponseFulfilled, onResponseRejected]);
 
   if (!isReadyAxios) return null;
 

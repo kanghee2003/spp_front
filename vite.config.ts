@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import process from 'node:process';
 
-import { PORTAL_BUILD_TARGET, SYSTEM_KEY_LIST, isAppBuildTarget, isSystemKey, type AppBuildTarget } from './src/config/system.config';
+import { PORTAL_BUILD_TARGET, SYSTEM_KEY_LIST, isAppBuildTarget, isSystemKey, type AppBuildTarget } from './src/config/system.constant';
 
 const toBool = (v?: string) => (v ?? '').toLowerCase() === 'true';
 const normalize = (url?: string) => (url ? url.replace(/\/$/, '') : '');

@@ -3,10 +3,10 @@ import { Button, Drawer, List, Typography } from 'antd';
 import { useMemo, useState } from 'react';
 
 import { useMessage } from '@/hook/useMessage';
-import { useMdiStore } from '@/store/mdi.store';
 import { useMenuStore } from '@/store/menu.store';
-import { SYSTEM_KEY_LIST, SYSTEM_LINK_LIST, type SystemKey } from '@/config/system.config';
 import { getSystemRootPath } from '@/utils/system.util';
+import { SYSTEM_LINK_LIST } from '@/config/system.config';
+import { SYSTEM_KEY_LIST, SystemKey } from '@/config/system.constant';
 
 type SystemLink = {
   label: string;

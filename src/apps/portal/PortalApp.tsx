@@ -1,11 +1,11 @@
 import { useEffect } from 'react';
 import { Route, Routes, useLocation } from 'react-router-dom';
 
-import { DEFAULT_SYSTEM_KEY } from '@/config/system.config';
 import AdminLogin from '@/layout/login/AdminLogin';
 import Login from '@/layout/login/Login';
 import { useAuthStore } from '@/store/auth.store';
 import { getSystemKeyFromRootPath, getSystemRootPath, isSystemPath, normalizePath } from '@/utils/system.util';
+import { DEFAULT_SYSTEM_KEY } from '@/config/system.constant';
 
 const DEFAULT_SYSTEM_PATH = getSystemRootPath(DEFAULT_SYSTEM_KEY);
 

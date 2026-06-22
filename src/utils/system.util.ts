@@ -1,4 +1,4 @@
-import { DEFAULT_SYSTEM_KEY, SYSTEM_KEY_LIST, isSystemKey, type SystemKey } from '@/config/system.config';
+import { DEFAULT_SYSTEM_KEY, isSystemKey, SYSTEM_KEY_LIST, SystemKey } from '@/config/system.constant';
 
 type Loader = () => Promise<string>;
 
