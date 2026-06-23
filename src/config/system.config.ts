@@ -1,13 +1,6 @@
 import { DEFAULT_SYSTEM_KEY, SYSTEM_BASE_CONFIG, type SystemKey } from './system.constant';
 
-export {
-  DEFAULT_SYSTEM_KEY,
-  PORTAL_BUILD_TARGET,
-  SYSTEM_BASE_CONFIG,
-  SYSTEM_KEY_LIST,
-  isAppBuildTarget,
-  isSystemKey,
-} from './system.constant';
+export { DEFAULT_SYSTEM_KEY, PORTAL_BUILD_TARGET, SYSTEM_BASE_CONFIG, SYSTEM_KEY_LIST, isAppBuildTarget, isSystemKey } from './system.constant';
 
 export type { AppBuildTarget, SystemKey } from './system.constant';
 
