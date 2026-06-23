@@ -1,7 +1,7 @@
 import { createContext, useContext } from 'react';
 
 import type { MenuNode } from '@/store/menu.store';
-import type { AppRoute } from '@/router/AutoRoutes';
+import { AppRoute } from './route.type';
 
 export type RouteLoader = (systemKey: string, menuTree: MenuNode[]) => AppRoute[];
 

@@ -5,7 +5,7 @@ export const SYSTEM_BASE_CONFIG = {
     systemKey: 'spp',
     rootPath: '/spp',
     label: '문서반출 시스템',
-    useMockMenu: false,
+    useMockMenu: true,
   },
   etc: {
     systemKey: 'etc',

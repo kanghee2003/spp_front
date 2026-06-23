@@ -4,7 +4,7 @@ import { DEFAULT_SCREEN_KEY } from '@/config/mockMenuConfig';
 import NotFoundPage from '@/error/NotFoundPage';
 import LazyLoadErrorBoundary from '@/shared/app/LazyLoadErrorBoundary';
 import { MenuType, type MenuNode } from '@/store/menu.store';
-import type { AppRoute } from '@/router/AutoRoutes';
+import { AppRoute } from './route.type';
 
 type PageModule = { default: React.ComponentType<any> };
 export type PageModules = Record<string, () => Promise<PageModule>>;
