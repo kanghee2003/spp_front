@@ -55,7 +55,7 @@ const GlobalAxiosProvider = (props: GlobalAxiosInterceptorProps) => {
       const menuId = activeTabKey ?? activeViewKey;
 
       if (menuId) {
-        headers.set('CURRENT_MENU_ID', 'menuId');
+        headers.set('CURRENT_MENU_ID', menuId);
       }
 
       const url = config.url ?? '';
