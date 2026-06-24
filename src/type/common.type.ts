@@ -33,6 +33,7 @@ export enum ErrorCode {
   AUTHORIZATION_ERROR = 401,
   INVALID_PARAMETER_ERROR = 452,
   INVALID_SESSION_ERROR = 453,
+  BAD_REQUEST = 500,
 }
 
 export enum IudType {

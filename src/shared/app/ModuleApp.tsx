@@ -54,7 +54,6 @@ export default function ModuleApp({ moduleKey, loadRoutes, extraRoutes = [] }: M
   const currentPath = normalizePath(window.location.pathname);
   const isCurrentModulePath = currentPath === modulePath || currentPath.startsWith(`${modulePath}/`);
 
-
   useEffect(() => {
     if (isCurrentModulePath) return;
 
