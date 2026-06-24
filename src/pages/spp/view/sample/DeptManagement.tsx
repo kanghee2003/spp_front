@@ -2,7 +2,7 @@ import React, { startTransition, useCallback, useEffect, useMemo, useState } fro
 import { Button, Tree, message } from 'antd';
 import type { DataNode, TreeProps } from 'antd/es/tree';
 import { useQueryClient } from '@tanstack/react-query';
-import PdfCanvasPreview from '../../component/Viewer/PdfCanvasPreview';
+import PdfCanvasPreview from '../../../../shared/component/Viewer/PdfCanvasPreview';
 
 /** ===== 타입 ===== */
 type Dept = { deptId: string; deptName: string; hasChildren?: boolean };

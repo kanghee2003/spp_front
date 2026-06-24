@@ -7,7 +7,7 @@ const Dashboard = () => {
         Dashboard Overview
       </Typography.Title>
 
-      <Typography.Paragraph style={{ marginBottom: 0 }}>대시보드 ETC</Typography.Paragraph>
+      <Typography.Paragraph style={{ marginBottom: 0 }}>대시보드 NIS</Typography.Paragraph>
     </Card>
   );
 };

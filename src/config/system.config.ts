@@ -9,9 +9,9 @@ export const SYSTEM_CONFIG = {
     ...SYSTEM_BASE_CONFIG.spp,
     apiBaseUrl: import.meta.env.VITE_SPP_API_BASE_URL || import.meta.env.VITE_API_BASE_URL,
   },
-  etc: {
-    ...SYSTEM_BASE_CONFIG.etc,
-    apiBaseUrl: import.meta.env.VITE_ETC_API_BASE_URL || import.meta.env.VITE_API_BASE_URL,
+  nis: {
+    ...SYSTEM_BASE_CONFIG.nis,
+    apiBaseUrl: import.meta.env.VITE_NIS_API_BASE_URL || import.meta.env.VITE_API_BASE_URL,
   },
 } as const satisfies Record<
   SystemKey,

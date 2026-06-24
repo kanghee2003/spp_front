@@ -62,7 +62,7 @@ function createBoundaryConfig(systemKey) {
         },
       ],
 
-      // Alias imports, e.g. @/pages/etc/..., are blocked per source system.
+      // Alias imports, e.g. @/pages/nis/..., are blocked per source system.
       // Self imports, e.g. SPP -> @/pages/spp/..., are allowed.
       'no-restricted-imports': [
         'error',

@@ -79,7 +79,7 @@ export const menuTreeSpp: MenuNode[] = [
   },
 ];
 
-export const menuTreeEtc: MenuNode[] = [
+export const menuTreeNis: MenuNode[] = [
   {
     key: 'HOME',
     label: 'Home',
@@ -103,7 +103,7 @@ export const menuTreeEtc: MenuNode[] = [
 
 const menuTreeMap: Record<SystemKey, MenuNode[]> = {
   spp: menuTreeSpp,
-  etc: menuTreeEtc,
+  nis: menuTreeNis,
 };
 
 export function getMockMenuTree(systemKey: SystemKey): MenuNode[] {

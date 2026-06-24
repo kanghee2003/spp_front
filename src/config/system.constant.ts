@@ -7,9 +7,9 @@ export const SYSTEM_BASE_CONFIG = {
     label: '문서반출 시스템',
     useMockMenu: true,
   },
-  etc: {
-    systemKey: 'etc',
-    rootPath: '/etc',
+  nis: {
+    systemKey: 'nis',
+    rootPath: '/nis',
     label: '개인정보 관리시스템',
     useMockMenu: true,
   },

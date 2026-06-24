@@ -5,6 +5,6 @@ import type { MenuNode } from '@/store/menu.store';
 
 const pageModules = import.meta.glob('./view/**/*.tsx') as Record<string, () => Promise<{ default: ComponentType<any> }>>;
 
-export function loadEtcRoutes(_systemKey: string, menuTree: MenuNode[]) {
+export function loadNisRoutes(_systemKey: string, menuTree: MenuNode[]) {
   return createAutoRoutes(pageModules, menuTree);
 }

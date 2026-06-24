@@ -145,7 +145,7 @@ const AppLayout = () => {
   }, [floatingOpen]);
 
   // URL 보정
-  // - 시스템 앱의 기준 URL은 /spp/, /etc/ 형태로 유지한다.
+  // - 시스템 앱의 기준 URL은 /spp/, /nis/ 형태로 유지한다.
   // - /spp/ 를 /spp 로 정규화하지 않는다.
   // - 현재 시스템 prefix 밖에서 실행된 경우에만 현재 시스템 루트로 보정한다.
   useEffect(() => {

@@ -25,8 +25,8 @@ import { isMatch } from '@/utils/regexp.util';
 import { REGEXP_RULES } from '@/type/common.regexp';
 import SppMultiSelectForm from '../../component/Select/SppMultiSelectForm';
 import SppMultiSelect from '../../component/Select/SppMultiSelect';
-import PdfCanvasPreview from '../../component/Viewer/PdfCanvasPreview';
-import PdfIframePreview from '../../component/Viewer/ PdfIframePreview';
+import PdfCanvasPreview from '../../../../shared/component/Viewer/PdfCanvasPreview';
+import PdfIframePreview from '../../../../shared/component/Viewer/ PdfIframePreview';
 
 type ComponentSampleFomeType = {
   select: string;

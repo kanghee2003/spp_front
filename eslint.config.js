@@ -78,7 +78,7 @@ export default [
       'react-hooks/exhaustive-deps': 'off',
 
       // pages 하위는 시스템(폴더) 경계를 넘어서 import 금지
-      // 예: src/pages/spp/** 는 src/pages/etc/** 또는 다른 시스템 폴더를 참조하면 안됨
+      // 예: src/pages/spp/** 는 src/pages/nis/** 또는 다른 시스템 폴더를 참조하면 안됨
       'import/no-restricted-paths': [
         'error',
         {
