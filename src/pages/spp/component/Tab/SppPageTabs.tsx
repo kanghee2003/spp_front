@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { Empty, Tabs } from 'antd';
 
 import NotFoundPage from '@/error/NotFoundPage';
-import LazyLoadErrorBoundary from '@/shared/app/LazyLoadErrorBoundary';
+import LazyLoadErrorBoundary from '@/error/LazyLoadErrorBoundary';
 import { MenuType, type MenuNode } from '@/store/menu.store';
 import { useMenuStore } from '@/store/menu.store';
 import { useMdiStore } from '@/store/mdi.store';

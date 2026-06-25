@@ -2,7 +2,7 @@ import React, { createElement } from 'react';
 
 import { DEFAULT_SCREEN_KEY } from '@/config/mockMenuConfig';
 import NotFoundPage from '@/error/NotFoundPage';
-import LazyLoadErrorBoundary from '@/shared/app/LazyLoadErrorBoundary';
+import LazyLoadErrorBoundary from '@/error/LazyLoadErrorBoundary';
 import { MenuType, type MenuNode } from '@/store/menu.store';
 import { AppRoute } from './route.type';
 

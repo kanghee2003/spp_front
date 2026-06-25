@@ -5,10 +5,10 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import type { ReactNode } from 'react';
 import type { SystemKey } from '@/config/system.config';
 
-import GlobalAxiosProvider from '@/provider/GlobalAxiosProvider';
+import { setupGlobalAxios } from '@/api/axiosInterceptor';
 import GlobalMessageProvider from '@/provider/GlobalMessageProvider';
 import AppLoading from '@/shared/component/Loading/AppLoading';
-import { registerVitePreloadErrorHandler } from '@/shared/app/registerVitePreloadErrorHandler';
+import { registerVitePreloadErrorHandler } from '@/error/registerVitePreloadErrorHandler';
 
 import '@/styles/index.css';
 import 'react-grid-layout/css/styles.css';
@@ -30,16 +30,15 @@ type BootstrapOptions = {
 
 export function bootstrapApp({ app, apiSystemKey }: BootstrapOptions) {
   registerVitePreloadErrorHandler();
+  setupGlobalAxios(apiSystemKey);
 
   ReactDOM.createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <QueryClientProvider client={queryClient}>
-        <GlobalAxiosProvider apiSystemKey={apiSystemKey}>
-          {app}
-          {import.meta.env.VITE_ENV_PROFILE !== 'prod' && <ReactQueryDevtools initialIsOpen={false} />}
-          <AppLoading />
-          <GlobalMessageProvider />
-        </GlobalAxiosProvider>
+        {app}
+        {import.meta.env.VITE_ENV_PROFILE !== 'prod' && <ReactQueryDevtools initialIsOpen={false} />}
+        <AppLoading />
+        <GlobalMessageProvider />
       </QueryClientProvider>
     </BrowserRouter>,
   );
