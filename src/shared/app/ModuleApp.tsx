@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 
 import { getMockMenuTree } from '@/config/mockMenuConfig';
 import AppLayout from '@/layout/AppLayout';
+import Login from '@/layout/login/Login';
 import { RouteLoaderProvider } from '@/provider/RouteLoaderProvider';
 import type { RouteLoader } from '@/router/routeLoaderContext';
 import { useAuthStore } from '@/store/auth.store';
@@ -141,11 +142,11 @@ export default function ModuleApp({ moduleKey, loadRoutes, extraRoutes = [] }: M
           <Route
             key={route.path}
             path={`${modulePath}${route.path.startsWith('/') ? route.path : `/${route.path}`}`}
-            element={token ? route.element : <Navigate to="/" replace />}
+            element={token ? route.element : <Login />}
           />
         ))}
 
-        <Route path={`${modulePath}/*`} element={!token ? <Navigate to="/" replace /> : loading ? <div /> : <AppLayout />} />
+        <Route path={`${modulePath}/*`} element={!token ? <Login /> : loading ? <div /> : <AppLayout />} />
 
         <Route path="*" element={<Navigate to={token ? moduleRootPath : '/'} replace />} />
       </Routes>

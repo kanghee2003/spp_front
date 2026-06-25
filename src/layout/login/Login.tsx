@@ -5,7 +5,7 @@ import { useUserInfoStore } from '@/store/userInfo.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useEffect } from 'react';
 import { generateUuidV4 } from '@/utils/common.util';
-import { getSystemKeyFromPath, getSystemRootPath } from '@/utils/system.util';
+import { getSystemKeyFromPath, getSystemRootPath, isSystemPath } from '@/utils/system.util';
 
 type LoginProps = {
   userId: string;
@@ -34,9 +34,13 @@ const Login = () => {
   };
 
   useEffect(() => {
-    if (token) {
-      navigate(getSystemRootPath(getSystemKeyFromPath(location.pathname)));
+    if (!token) return;
+
+    if (isSystemPath(location.pathname)) {
+      return;
     }
+
+    navigate(getSystemRootPath(getSystemKeyFromPath(location.pathname)));
   }, [token, location.pathname, navigate]);
 
   return (
