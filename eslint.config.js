@@ -14,8 +14,10 @@ import prettierPlugin from 'eslint-plugin-prettier';
 import prettierConfig from 'eslint-config-prettier';
 
 // src/pages 하위 시스템(1레벨 폴더) 목록을 동적으로 수집해서
-// "내 시스템 폴더는 다른 시스템 폴더를 import 할 수 없다" 규칙을 자동 생성한다.
+// 시스템 간 pages 참조 금지 규칙을 자동 생성한다.
+const srcRoot = path.resolve(process.cwd(), 'src');
 const pagesRoot = path.resolve(process.cwd(), 'src/pages');
+
 let pageSystems = [];
 try {
   pageSystems = fs
@@ -26,9 +28,57 @@ try {
   pageSystems = [];
 }
 
+let srcChildDirs = [];
+try {
+  srcChildDirs = fs
+    .readdirSync(srcRoot, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => d.name);
+} catch {
+  srcChildDirs = [];
+}
+
+// 공통/기반 영역은 pages 업무 코드를 참조하면 안 된다.
+// apps/pages는 별도 규칙으로 처리한다.
+const commonSrcDirs = srcChildDirs.filter((dir) => !['apps', 'pages'].includes(dir));
+
+const pageBoundaryZones = pageSystems.flatMap((systemKey) =>
+  pageSystems
+    .filter((otherSystem) => otherSystem !== systemKey)
+    .map((otherSystem) => ({
+      target: `./src/pages/${systemKey}`,
+      from: `./src/pages/${otherSystem}`,
+      message: `${systemKey} 시스템 코드는 ${otherSystem} 시스템의 pages 코드를 참조할 수 없습니다.`,
+    })),
+);
+
+const commonBoundaryZones = commonSrcDirs.map((dir) => ({
+  target: `./src/${dir}`,
+  from: './src/pages',
+  message: 'pages 이외의 공통/기반 영역에서는 pages 하위 업무 코드를 참조할 수 없습니다.',
+}));
+
+const portalBoundaryZone = {
+  target: './src/apps/portal',
+  from: './src/pages',
+  message: 'portal 영역에서는 pages 하위 업무 코드를 참조할 수 없습니다.',
+};
+
+const appBoundaryZones = pageSystems.flatMap((systemKey) =>
+  pageSystems
+    .filter((otherSystem) => otherSystem !== systemKey)
+    .map((otherSystem) => ({
+      target: `./src/apps/${systemKey}`,
+      from: `./src/pages/${otherSystem}`,
+      message: `${systemKey} app 영역에서는 ${otherSystem} 시스템의 pages 코드를 참조할 수 없습니다.`,
+    })),
+);
+
+const pagesImportPatterns = ['@/pages/**', 'src/pages/**', '../pages/**', '../../pages/**', '../../../pages/**', '../../../../pages/**'];
+
 export default [
   // eslint 자체 설정 파일은 node 전역(process 등)을 사용하므로 lint 대상에서 제외
-  { ignores: ['dist/**', 'node_modules/**', '.npm-cache/**', 'eslint.config.js'] },
+  { ignores: ['dist/**', 'node_modules/**', '.npm-cache/**', 'eslint.config.js', 'eslint.boundary.config.js'] },
 
   js.configs.recommended,
 
@@ -65,7 +115,6 @@ export default [
       ...reactHooks.configs.recommended.rules,
 
       // 프로토/샘플 단계에서는 any/빈 interface 패턴이 자주 등장하므로 에디터 빨간줄(규칙 위반)만 제거한다.
-      // (시스템 경계 강제는 eslint.boundary.config.js 로 별도 수행)
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-empty-object-type': 'off',
       'react-hooks/set-state-in-effect': 'off',
@@ -77,29 +126,22 @@ export default [
       'react-hooks/rules-of-hooks': 'off',
       'react-hooks/exhaustive-deps': 'off',
 
-      // pages 하위는 시스템(폴더) 경계를 넘어서 import 금지
-      // 예: src/pages/spp/** 는 src/pages/nis/** 또는 다른 시스템 폴더를 참조하면 안됨
+      // import/no-restricted-paths는 실제 resolved path 기준으로 금지한다.
+      // 1) pages 하위 시스템 간 참조 금지
+      // 2) pages 이외 공통/기반 영역에서 pages 참조 금지
+      // 3) portal에서 pages 참조 금지
+      // 4) apps/<system>에서는 다른 시스템 pages 참조 금지
       'import/no-restricted-paths': [
         'error',
         {
-          // NOTE: target 을 src/pages 전체로 걸면 "자기 시스템 내부" 경로도 함께 매칭돼서 오탐이 발생할 수 있음.
-          // 따라서 "(from) 내 시스템" -> "(target) 다른 시스템 폴더" 형태로 pairwise zone 을 만든다.
-          zones: pageSystems.flatMap((fromSystem) =>
-            pageSystems
-              .filter((targetSystem) => targetSystem !== fromSystem)
-              .map((targetSystem) => ({
-                from: `./src/pages/${fromSystem}`,
-                target: `./src/pages/${targetSystem}`,
-                message: `${fromSystem} 시스템 코드는 다른 시스템의 pages 코드를 참조할 수 없습니다. 공용 코드는 shared로 이동하세요.`,
-              })),
-          ),
+          zones: [...pageBoundaryZones, ...commonBoundaryZones, portalBoundaryZone, ...appBoundaryZones],
         },
       ],
       'prettier/prettier': 'warn',
     },
   },
-  // import/no-restricted-paths 는 resolver 상황에 따라(alias 등) 놓칠 수 있어
-  // "@/pages/<otherSystem>/**" 와 같은 alias import 도 확실히 막는다.
+
+  // pages 하위 시스템 간 alias import 금지
   ...pageSystems.map((systemKey) => {
     const others = pageSystems.filter((k) => k !== systemKey);
     const blocked = others.flatMap((k) => [`@/pages/${k}/**`, `src/pages/${k}/**`]);
@@ -113,7 +155,70 @@ export default [
             patterns: [
               {
                 group: blocked,
-                message: `${systemKey} 시스템 코드는 다른 시스템의 pages 코드를 참조할 수 없습니다. 공용 코드는 shared로 이동하세요.`,
+                message: `${systemKey} 시스템 코드는 다른 시스템의 pages 코드를 참조할 수 없습니다.`,
+              },
+            ],
+          },
+        ],
+      },
+    };
+  }),
+
+  // pages 이외 공통/기반 영역에서 pages alias/relative import 금지
+  ...(commonSrcDirs.length > 0
+    ? [
+        {
+          files: commonSrcDirs.map((dir) => `src/${dir}/**/*.{ts,tsx}`),
+          rules: {
+            'no-restricted-imports': [
+              'error',
+              {
+                patterns: [
+                  {
+                    group: pagesImportPatterns,
+                    message: 'pages 이외의 공통/기반 영역에서는 pages 하위 업무 코드를 import할 수 없습니다.',
+                  },
+                ],
+              },
+            ],
+          },
+        },
+      ]
+    : []),
+
+  // portal에서는 pages 전체 import 금지
+  {
+    files: ['src/apps/portal/**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: pagesImportPatterns,
+              message: 'portal 영역에서는 pages 하위 업무 코드를 import할 수 없습니다.',
+            },
+          ],
+        },
+      ],
+    },
+  },
+
+  // apps/<system>에서는 자기 pages만 허용하고 다른 시스템 pages는 금지
+  ...pageSystems.map((systemKey) => {
+    const others = pageSystems.filter((k) => k !== systemKey);
+    const blocked = others.flatMap((k) => [`@/pages/${k}/**`, `src/pages/${k}/**`]);
+
+    return {
+      files: [`src/apps/${systemKey}/**/*.{ts,tsx}`],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          {
+            patterns: [
+              {
+                group: blocked,
+                message: `${systemKey} app 영역에서는 다른 시스템의 pages 코드를 import할 수 없습니다.`,
               },
             ],
           },
